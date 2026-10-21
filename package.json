@@ -10,7 +10,8 @@
     "format:check": "git ls-files -z | xargs -0 prettier --check --ignore-unknown",
     "demo": "docker compose up --build",
     "demo:test": "TEST_MODE=true docker compose up --build --wait",
-    "e2e": "pnpm demo:test && pnpm --filter e2e test"
+    "e2e": "pnpm demo:test && pnpm --filter e2e test",
+    "traceability": "node scripts/traceability/cli.ts"
   },
   "devDependencies": {
     "prettier": "3.9.10"
