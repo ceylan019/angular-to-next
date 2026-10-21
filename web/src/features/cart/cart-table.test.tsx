@@ -60,11 +60,11 @@ function quantityFor(name: string): HTMLInputElement {
   return screen.getByRole("spinbutton", { name: `Quantity for ${name}` });
 }
 
-function type(input: HTMLInputElement, value: string): void {
+function type(input: HTMLElement, value: string): void {
   fireEvent.input(input, { target: { value } });
 }
 
-function commit(input: HTMLInputElement): void {
+function commit(input: HTMLElement): void {
   fireEvent.change(input);
 }
 
@@ -97,10 +97,10 @@ describe("CartTable", () => {
     expect(quantityFor("Ember & Clove")).toHaveValue(2);
 
     const remove = screen.getByRole("button", { name: "Remove Lavender Dusk" });
-    expect(remove.firstChild?.textContent).toBe("Remove");
+    expect(remove.firstChild?.textContent?.trim()).toBe("Remove");
     const hiddenName = within(remove).getByText("Lavender Dusk");
     expect(hiddenName).toHaveClass("sr-only");
-    expect(hiddenName.textContent).toBe(" Lavender Dusk");
+    expect(hiddenName.textContent).toBe("Lavender Dusk");
     expect(
       screen.getByRole("button", { name: "Remove Ember & Clove" }),
     ).toBeInTheDocument();
