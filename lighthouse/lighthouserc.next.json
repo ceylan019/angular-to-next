@@ -6,7 +6,8 @@
         "http://localhost:3000/products/lavender-dusk",
         "http://localhost:3000/cart"
       ],
-      "numberOfRuns": 5
+      "numberOfRuns": 5,
+      "settings": { "chromeFlags": "--no-sandbox --disable-dev-shm-usage" }
     },
     "assert": {
       "assertions": {
