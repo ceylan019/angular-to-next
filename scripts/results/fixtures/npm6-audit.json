@@ -1,14 +1,223 @@
 {
   "actions": [],
-  "advisories": {},
+  "advisories": {
+    "1001": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-a", "fixture-app>fixture-module-a"]
+        }
+      ],
+      "id": 1001,
+      "title": "Fixture advisory 1001",
+      "module_name": "fixture-module-a",
+      "severity": "critical",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1001"
+    },
+    "1002": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-b", "fixture-app>fixture-module-b"]
+        }
+      ],
+      "id": 1002,
+      "title": "Fixture advisory 1002",
+      "module_name": "fixture-module-b",
+      "severity": "critical",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1002"
+    },
+    "1003": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-c", "fixture-app>fixture-module-c"]
+        }
+      ],
+      "id": 1003,
+      "title": "Fixture advisory 1003",
+      "module_name": "fixture-module-c",
+      "severity": "high",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1003"
+    },
+    "1004": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-d", "fixture-app>fixture-module-d"]
+        }
+      ],
+      "id": 1004,
+      "title": "Fixture advisory 1004",
+      "module_name": "fixture-module-d",
+      "severity": "high",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1004"
+    },
+    "1005": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-e", "fixture-app>fixture-module-e"]
+        }
+      ],
+      "id": 1005,
+      "title": "Fixture advisory 1005",
+      "module_name": "fixture-module-e",
+      "severity": "high",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1005"
+    },
+    "1006": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-f", "fixture-app>fixture-module-f"]
+        }
+      ],
+      "id": 1006,
+      "title": "Fixture advisory 1006",
+      "module_name": "fixture-module-f",
+      "severity": "high",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1006"
+    },
+    "1007": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-g", "fixture-app>fixture-module-g"]
+        }
+      ],
+      "id": 1007,
+      "title": "Fixture advisory 1007",
+      "module_name": "fixture-module-g",
+      "severity": "high",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1007"
+    },
+    "1008": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-h", "fixture-app>fixture-module-h"]
+        }
+      ],
+      "id": 1008,
+      "title": "Fixture advisory 1008",
+      "module_name": "fixture-module-h",
+      "severity": "moderate",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1008"
+    },
+    "1009": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-i", "fixture-app>fixture-module-i"]
+        }
+      ],
+      "id": 1009,
+      "title": "Fixture advisory 1009",
+      "module_name": "fixture-module-i",
+      "severity": "moderate",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1009"
+    },
+    "1010": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-j", "fixture-app>fixture-module-j"]
+        }
+      ],
+      "id": 1010,
+      "title": "Fixture advisory 1010",
+      "module_name": "fixture-module-j",
+      "severity": "moderate",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1010"
+    },
+    "1011": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-k", "fixture-app>fixture-module-k"]
+        }
+      ],
+      "id": 1011,
+      "title": "Fixture advisory 1011",
+      "module_name": "fixture-module-k",
+      "severity": "low",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1011"
+    },
+    "1012": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-l", "fixture-app>fixture-module-l"]
+        }
+      ],
+      "id": 1012,
+      "title": "Fixture advisory 1012",
+      "module_name": "fixture-module-l",
+      "severity": "info",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1012"
+    },
+    "1013": {
+      "findings": [
+        {
+          "version": "1.0.0",
+          "paths": ["fixture-module-m", "fixture-app>fixture-module-m"]
+        }
+      ],
+      "id": 1013,
+      "title": "Fixture advisory 1013",
+      "module_name": "fixture-module-m",
+      "severity": "info",
+      "vulnerable_versions": "<2.0.0",
+      "patched_versions": ">=2.0.0",
+      "recommendation": "Upgrade to version 2.0.0 or later",
+      "url": "https://example.com/advisories/1013"
+    }
+  },
   "muted": [],
   "metadata": {
     "vulnerabilities": {
       "info": 4,
-      "low": 1,
-      "moderate": 3,
-      "high": 5,
-      "critical": 2
+      "low": 2,
+      "moderate": 6,
+      "high": 10,
+      "critical": 4
     },
     "dependencies": 101,
     "devDependencies": 0,

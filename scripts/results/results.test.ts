@@ -86,8 +86,19 @@ const coverage = (pct: unknown): unknown => ({
 });
 
 const METRICS = {
-  legacy: { jsBytes: 307_200, backendCalls: 2 },
-  next: { jsBytes: 153_600, backendCalls: 1 },
+  legacy: {
+    jsBytes: 307_200,
+    backendCalls: 2,
+    scripts: [{ url: "http://localhost:4000/main.js", gzipBytes: 307_200 }],
+  },
+  next: {
+    jsBytes: 153_600,
+    backendCalls: 1,
+    scripts: [
+      { url: "http://localhost:3000/_next/a.js", gzipBytes: 100_000 },
+      { url: "http://localhost:3000/_next/b.js", gzipBytes: 53_600 },
+    ],
+  },
 };
 
 const NEXT_MUTATION = mutationReport(
@@ -186,16 +197,18 @@ const METHOD = [
   "## How each number is measured",
   "",
   "- Lighthouse: the median score of 5 mobile runs per page, out of 100.",
-  "- JavaScript on first load: the sum of the gzip sizes of each script response body on `/`, compressed by the measuring script with zlib for both apps, because the legacy server does not compress its responses and wire sizes would not compare. Scripts inlined in the HTML are part of the document and not counted. 1 KB is 1024 bytes.",
+  "- JavaScript on first load: the sum of the gzip sizes of each script response body on `/` until the load event, each URL counted once, compressed by the measuring script with zlib for both apps, because the legacy server does not compress its responses and wire sizes would not compare. Scripts inlined in the HTML are part of the document and not counted. The `metrics` artifact lists each script URL with its gzip size. 1 KB is 1024 bytes.",
   "- Backend calls: the API requests the backend counts while a fresh browser loads `/products/lavender-dusk` until the network is idle, server rendering included. The backend's own health and test endpoints are not counted, and the front end health checks load `/cart`, which calls no API.",
-  "- Known vulnerabilities: `npm audit --production` with npm 6 for legacy and `pnpm audit --prod` for the new app, counting critical, high, moderate and low advisories.",
+  "- Known vulnerabilities: the advisories reported by `npm audit --production` with npm 6 for legacy and by `pnpm audit --prod` for the new app, each advisory counted once by severity (critical, high, moderate, low) rather than the per path totals in the audit metadata.",
   "- Mutation score: detected mutants (killed or timed out) over valid mutants (killed, timed out, survived or not covered), to one decimal. Timeouts are listed next to the score because a loaded machine can turn a timeout into a false kill. The shared backend is mutation tested too and is not a column here.",
   "- Legacy mutation testing runs Stryker 5.6.1 on Node 12, with its dependencies resolved as published before 2025-08-01 (which holds `inquirer` at 8.2.6) and `procps` in the mutation image. Refreshing the legacy lockfile with plain npm 6 breaks it.",
   "- Line coverage: `total.lines.pct` from each app's coverage summary, from Karma with Istanbul for legacy and Vitest with V8 for the new app.",
 ].join("\n");
 
 const INTRO =
-  "Old versus new, measured in CI on one runner against the same backend and the same data. Legacy is the Angular 10 app and New is the Next.js app, both running in their production containers.";
+  "Legacy is the Angular 10 app and New is the Next.js app, both running in their production containers against the same backend and the same data. Each pair measured on a running stack (Lighthouse, JavaScript on first load, backend calls) is measured for both apps on the same runner within one CI run.";
+const COVERAGE_NOTE =
+  "Line coverage scopes differ: Karma instruments only the legacy files the specs load, while Vitest V8 reports every file under the new app's `src`.";
 const NA_NOTE =
   "A cell reads n/a when its report is missing or unreadable in this run, with the reason in parentheses.";
 const LEGACY_MUTATION_NOTE =
@@ -392,16 +405,43 @@ describe("lighthouseScore", () => {
     expect(lighthouseScore(runs, "/", "performance")).toBe(80);
   });
 
-  it("matches runs by page path on any origin and ignores other pages", () => {
-    const runs = [
-      ...manifest({ "/": [scores(0.3)] }, "http://localhost:4000"),
-      ...manifest({ "/cart": [scores(0.9)] }, "http://127.0.0.1:3002"),
-      ...manifest({ [PRODUCT]: [scores(0.7)] }),
-    ];
+  it("matches runs by page path on the origin they share and ignores other pages", () => {
+    const runs = manifest(
+      {
+        "/": [scores(0.3)],
+        "/cart": [scores(0.9)],
+        [PRODUCT]: [scores(0.7)],
+      },
+      "http://127.0.0.1:3002",
+    );
 
     expect(lighthouseScore(runs, "/", "performance")).toBe(30);
     expect(lighthouseScore(runs, "/cart", "performance")).toBe(90);
     expect(lighthouseScore(runs, PRODUCT, "performance")).toBe(70);
+  });
+
+  it("refuses runs that span more than one origin", () => {
+    const runs = [
+      ...manifest({ "/": [scores(0.3)] }, "http://localhost:4000"),
+      ...manifest({ "/": [scores(0.9)] }, "http://localhost:3000"),
+    ];
+
+    expectError(
+      () => lighthouseScore(runs, "/", "performance"),
+      "runs from more than one origin",
+    );
+    expectError(
+      () =>
+        lighthouseScore(
+          [
+            ...manifest({ "/cart": [scores(1)] }, "http://localhost:3000"),
+            ...manifest({ "/cart": [scores(1)] }, "https://localhost:3000"),
+          ],
+          "/",
+          "seo",
+        ),
+      "runs from more than one origin",
+    );
   });
 
   it("refuses a page without scored runs", () => {
@@ -558,6 +598,8 @@ describe("buildResults", () => {
         "",
         table,
         "",
+        COVERAGE_NOTE,
+        "",
         NA_NOTE,
         "",
         METHOD,
@@ -627,6 +669,24 @@ describe("buildResults", () => {
         "n/a (report unreadable)",
       ]);
     }
+  });
+
+  it("names the reason when Lighthouse runs mix origins", () => {
+    const markdown = buildResults(
+      input({
+        legacy: {
+          lighthouse: [
+            ...manifest({ "/": [scores(0.5)] }, "http://localhost:4000"),
+            ...manifest({ "/": [scores(0.6)] }, "http://localhost:3000"),
+          ],
+        },
+      }),
+    );
+
+    expect(row(markdown, "Lighthouse SEO, `/cart`")).toEqual([
+      "n/a (runs from more than one origin)",
+      "100",
+    ]);
   });
 
   it("names the reason when a report has nothing to score", () => {
@@ -738,8 +798,9 @@ describe("buildResults", () => {
 
   it("shows a clean audit as a plain zero", () => {
     const clean = {
+      advisories: { "7": { id: 7, severity: "info" } },
       metadata: {
-        vulnerabilities: { info: 2, low: 0, moderate: 0, high: 0, critical: 0 },
+        vulnerabilities: { info: 1, low: 0, moderate: 0, high: 0, critical: 0 },
       },
     };
 
@@ -764,7 +825,9 @@ describe("buildReadmeSection", () => {
     const section = buildReadmeSection(input());
     const table = tableLines(buildResults(input())).join("\n");
 
-    expect(section).toBe(`${table}\n\n${DETAILS} ${FOOTER}`);
+    expect(section).toBe(
+      `${table}\n\n${COVERAGE_NOTE}\n\n${DETAILS} ${FOOTER}`,
+    );
   });
 
   it("carries the same n/a cells as the results document", () => {
@@ -963,6 +1026,136 @@ describe("replaceReadmeSection", () => {
       lines("## Results", "", "New.", ""),
     );
     expect(replaceReadmeSection("\n\n", "Results", "New.")).toBe(
+      lines("## Results", "", "New.", ""),
+    );
+  });
+
+  it("replaces trailing content up to the end of the file when no heading follows", () => {
+    const readme = lines(
+      "# Shop",
+      "",
+      "## Results",
+      "",
+      "Old table.",
+      "",
+      "Old note.",
+      "",
+      "```",
+      "old code",
+      "```",
+      "",
+    );
+
+    expect(replaceReadmeSection(readme, "Results", "New.")).toBe(
+      lines("# Shop", "", "## Results", "", "New.", ""),
+    );
+  });
+
+  it("ignores a results heading inside a fenced code block", () => {
+    const readme = lines("# Shop", "", "```md", "## Results", "```", "");
+
+    expect(replaceReadmeSection(readme, "Results", "New.")).toBe(
+      lines(
+        "# Shop",
+        "",
+        "```md",
+        "## Results",
+        "```",
+        "",
+        "## Results",
+        "",
+        "New.",
+        "",
+      ),
+    );
+  });
+
+  it("keeps fenced lines that look like headings inside the section", () => {
+    const readme = lines(
+      "## Results",
+      "",
+      "```",
+      "## Not a heading",
+      "# Nor this",
+      "```",
+      "",
+      "Old.",
+      "",
+      "## Status",
+      "",
+      "Done.",
+      "",
+    );
+
+    expect(replaceReadmeSection(readme, "Results", "New.")).toBe(
+      lines("## Results", "", "New.", "", "## Status", "", "Done.", ""),
+    );
+  });
+
+  it("closes a fence only with a bare marker of the same kind and at least the same length", () => {
+    const section = (...code: string[]): string =>
+      replaceReadmeSection(
+        lines("## Results", "", ...code, "", "## Status", ""),
+        "Results",
+        "New.",
+      );
+    const replaced = lines("## Results", "", "New.", "", "## Status", "");
+
+    expect(section("````", "```", "## Code", "````")).toBe(replaced);
+    expect(section("```", "~~~", "## Code", "```")).toBe(replaced);
+    expect(section("~~~~", "~~~", "## Code", "~~~~~")).toBe(replaced);
+    expect(section("```", "```js", "## Code", "```  ")).toBe(replaced);
+  });
+
+  it("reads tilde fences and fences indented by up to three spaces", () => {
+    const readme = lines(
+      "~~~",
+      "## Results",
+      "~~~",
+      "   ```",
+      "## Results",
+      "   ```",
+      "",
+    );
+
+    expect(replaceReadmeSection(readme, "Results", "New.")).toBe(
+      lines(
+        "~~~",
+        "## Results",
+        "~~~",
+        "   ```",
+        "## Results",
+        "   ```",
+        "",
+        "## Results",
+        "",
+        "New.",
+        "",
+      ),
+    );
+  });
+
+  it("does not open a fence from an indented code line, inline backticks or a backtick info string", () => {
+    for (const notAFence of [
+      "    ```",
+      "Use ``` to start a fence.",
+      "```js `x` ```",
+      "``",
+    ]) {
+      expect(
+        replaceReadmeSection(
+          lines("## Results", "", notAFence, "", "## Status", ""),
+          "Results",
+          "New.",
+        ),
+      ).toBe(lines("## Results", "", "New.", "", "## Status", ""));
+    }
+  });
+
+  it("treats an unclosed fence as code up to the end of the file", () => {
+    const readme = lines("## Results", "", "```", "## Status", "Done.", "");
+
+    expect(replaceReadmeSection(readme, "Results", "New.")).toBe(
       lines("## Results", "", "New.", ""),
     );
   });
