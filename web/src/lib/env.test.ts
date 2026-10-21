@@ -82,7 +82,15 @@ describe("parseEnv", () => {
     "http://user:secret@backend:8080",
     "http://:secret@backend:8080",
   ])("rejects the url %s that would break path concatenation", (value) => {
-    expect(() => parseEnv({ BACKEND_URL: value })).toThrow(/BACKEND_URL/);
+    expect(() => parseEnv({ BACKEND_URL: value })).toThrow(
+      /^(?=[\s\S]*BACKEND_URL)(?=[\s\S]*query, fragment or credentials)/,
+    );
+  });
+
+  it("reports only the format problem for an unparsable url", () => {
+    expect(() => parseEnv({ BACKEND_URL: "not a url" })).not.toThrow(
+      /query, fragment or credentials/,
+    );
   });
 });
 

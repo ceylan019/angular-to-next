@@ -22,9 +22,9 @@ import {
 type Json = Record<string, unknown>;
 
 function without(value: object, key: string): Json {
-  const copy: Json = { ...value };
-  delete copy[key];
-  return copy;
+  return Object.fromEntries(
+    Object.entries(value).filter(([name]) => name !== key),
+  );
 }
 
 const summary = productPage.items[0] as Json;
@@ -73,6 +73,15 @@ describe("productSummarySchema", () => {
       productSummarySchema.safeParse({ ...summary, stock: 0 }).success,
     ).toBe(true);
   });
+
+  it.each(["candle", "lavender-dusk", "no-1-candle", "a-b-c"])(
+    "accepts the slug %s",
+    (slug) => {
+      expect(productSummarySchema.safeParse({ ...summary, slug }).success).toBe(
+        true,
+      );
+    },
+  );
 
   it.each(["id", "slug", "name", "family", "priceCents", "stock", "imageUrl"])(
     "rejects a missing %s",

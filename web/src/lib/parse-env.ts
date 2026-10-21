@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 function isPlainBase(value: string): boolean {
-  if (value.includes("?") || value.includes("#")) return false;
   if (!URL.canParse(value)) return true;
+  if (value.includes("?") || value.includes("#")) return false;
   const url = new URL(value);
   return url.username === "" && url.password === "";
 }

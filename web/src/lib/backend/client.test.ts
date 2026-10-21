@@ -172,7 +172,9 @@ describe("getProduct", () => {
   });
 
   it("raises BackendContractError when a field is missing", async () => {
-    const { priceCents: _omitted, ...withoutPrice } = lavenderDusk;
+    const withoutPrice = Object.fromEntries(
+      Object.entries(lavenderDusk).filter(([key]) => key !== "priceCents"),
+    );
     server.use(
       http.get(`${BASE}/api/products/lavender-dusk`, () =>
         HttpResponse.json(withoutPrice),
