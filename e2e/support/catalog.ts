@@ -1,6 +1,6 @@
 import catalog from "backend/catalog.json" with { type: "json" };
 
-export type CatalogProduct = (typeof catalog)[number];
+export type CatalogProduct = Readonly<(typeof catalog)[number]>;
 
 export const CATALOG: readonly CatalogProduct[] = catalog;
 

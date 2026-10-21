@@ -23,6 +23,26 @@ export default defineConfig(
     },
   },
   {
+    files: ["tests/**/*.ts", "support/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MemberExpression[property.name='waitForTimeout']",
+          message: "Wait with a web first assertion, never a fixed timeout.",
+        },
+        {
+          selector: "CallExpression[callee.name='setTimeout']",
+          message: "Wait with a web first assertion, never a timer.",
+        },
+        {
+          selector: "MemberExpression[property.name='setTimeout']",
+          message: "Wait with a web first assertion, never a timer.",
+        },
+      ],
+    },
+  },
+  {
     files: ["tests/**/*.ts"],
     rules: {
       "@typescript-eslint/no-restricted-imports": [
