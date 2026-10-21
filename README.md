@@ -14,5 +14,5 @@ Work in progress. Each step lands as one pull request.
 - [x] Step 4: Shared parity suite, proven on legacy
 - [x] Step 5: Rewrite browse
 - [x] Step 6: Rewrite cart
-- [ ] Step 7: Rewrite checkout
+- [x] Step 7: Rewrite checkout
 - [ ] Step 8: Old versus new results
