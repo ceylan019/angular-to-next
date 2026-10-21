@@ -159,18 +159,6 @@ describe("getProduct", () => {
     await expect(getProduct("nope")).resolves.toBeNull();
   });
 
-  it("encodes the slug as a path segment", async () => {
-    let pathname = "";
-    server.use(
-      http.get(`${BASE}/api/products/:slug`, ({ request }) => {
-        pathname = new URL(request.url).pathname;
-        return HttpResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-      }),
-    );
-    await getProduct("a/b c?d#e");
-    expect(pathname).toBe("/api/products/a%2Fb%20c%3Fd%23e");
-  });
-
   it("raises BackendContractError when a field is missing", async () => {
     const withoutPrice = Object.fromEntries(
       Object.entries(lavenderDusk).filter(([key]) => key !== "priceCents"),
@@ -307,18 +295,6 @@ describe("getOrder", () => {
     await expect(getOrder("WC-ZZZZZZ")).resolves.toBeNull();
   });
 
-  it("encodes the order number as a path segment", async () => {
-    let pathname = "";
-    server.use(
-      http.get(`${BASE}/api/orders/:orderNumber`, ({ request }) => {
-        pathname = new URL(request.url).pathname;
-        return HttpResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-      }),
-    );
-    await getOrder("../products");
-    expect(pathname).toBe("/api/orders/..%2Fproducts");
-  });
-
   it("raises BackendContractError for a malformed order", async () => {
     server.use(
       http.get(`${BASE}/api/orders/WC-AB12CD`, () =>
@@ -346,7 +322,10 @@ describe("placeOrder", () => {
   const stockItems = [{ productId: 7, available: 1 }];
   const priceItems = [{ productId: 7, unitPriceCents: 1700 }];
 
-  const mockOrders = (status: number, body: unknown) => {
+  const mockOrders = (
+    status: number,
+    body: Parameters<typeof HttpResponse.json>[0],
+  ) => {
     server.use(
       http.post(`${BASE}/api/orders`, () =>
         HttpResponse.json(body, { status }),
@@ -510,11 +489,17 @@ describe("placeOrder", () => {
 });
 
 describe("body read failures", () => {
-  function stallingStream(onStart?: () => void) {
+  function stallingStream(onSecondRead?: () => void) {
+    let reads = 0;
     return new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode('{"par'));
-        onStart?.();
+      pull(controller) {
+        reads += 1;
+        if (reads === 1) {
+          controller.enqueue(new TextEncoder().encode('{"par'));
+          return;
+        }
+        onSecondRead?.();
+        return new Promise<void>(() => undefined);
       },
     });
   }
@@ -550,9 +535,7 @@ describe("body read failures", () => {
     server.use(
       http.get(`${BASE}/api/products/lavender-dusk`, () => {
         const body = stallingStream(() => {
-          setTimeout(() => {
-            controller.abort(reason);
-          }, 10);
+          controller.abort(reason);
         });
         return new HttpResponse(body, {
           headers: { "content-type": "application/json" },

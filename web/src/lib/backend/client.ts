@@ -47,6 +47,7 @@ async function send(path: string, init: RequestInit = {}): Promise<Response> {
     });
   }
   if (response.status >= 500) {
+    await response.body?.cancel();
     throw new BackendUnavailableError(
       `Backend answered ${String(response.status)} for ${path}`,
     );
@@ -54,7 +55,11 @@ async function send(path: string, init: RequestInit = {}): Promise<Response> {
   return response;
 }
 
-function unexpectedStatus(path: string, response: Response): never {
+async function unexpectedStatus(
+  path: string,
+  response: Response,
+): Promise<never> {
+  await response.body?.cancel();
   throw new BackendContractError(
     `Backend answered ${String(response.status)} for ${path}, which the contract does not list`,
   );
@@ -64,9 +69,16 @@ async function readJson(path: string, response: Response): Promise<unknown> {
   try {
     return await response.json();
   } catch (cause) {
-    throw new BackendContractError(`Backend sent a non JSON body for ${path}`, {
-      cause,
-    });
+    if (cause instanceof SyntaxError) {
+      throw new BackendContractError(
+        `Backend sent a non JSON body for ${path}`,
+        { cause },
+      );
+    }
+    throw new BackendUnavailableError(
+      `Backend body could not be read for ${path}`,
+      { cause },
+    );
   }
 }
 
@@ -90,7 +102,7 @@ async function getList<S extends z.ZodType>(
   schema: S,
 ): Promise<z.infer<S>> {
   const response = await send(path);
-  if (response.status !== 200) unexpectedStatus(path, response);
+  if (response.status !== 200) await unexpectedStatus(path, response);
   return parseBody(path, response, schema);
 }
 
@@ -99,8 +111,11 @@ async function getOrNull<S extends z.ZodType>(
   schema: S,
 ): Promise<z.infer<S> | null> {
   const response = await send(path);
-  if (response.status === 404) return null;
-  if (response.status !== 200) unexpectedStatus(path, response);
+  if (response.status === 404) {
+    await response.body?.cancel();
+    return null;
+  }
+  if (response.status !== 200) await unexpectedStatus(path, response);
   return parseBody(path, response, schema);
 }
 
@@ -114,7 +129,11 @@ export function getProducts(params: URLSearchParams): Promise<ProductPage> {
   return getList(path, productPageSchema);
 }
 
+const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const ORDER_NUMBER = /^WC-[A-Z0-9]{6}$/;
+
 export function getProduct(slug: string): Promise<ProductDetail | null> {
+  if (!SLUG.test(slug)) return Promise.resolve(null);
   return getOrNull(
     `/api/products/${encodeURIComponent(slug)}`,
     productDetailSchema,
@@ -122,6 +141,7 @@ export function getProduct(slug: string): Promise<ProductDetail | null> {
 }
 
 export function getOrder(orderNumber: string): Promise<Order | null> {
+  if (!ORDER_NUMBER.test(orderNumber)) return Promise.resolve(null);
   return getOrNull(
     `/api/orders/${encodeURIComponent(orderNumber)}`,
     orderSchema,
@@ -153,7 +173,7 @@ export async function placeOrder(
     case 409:
       return parseConflict(path, response);
     default:
-      return unexpectedStatus(path, response);
+      return await unexpectedStatus(path, response);
   }
 }
 
@@ -171,6 +191,6 @@ async function parseConflict(
     return { kind: "price-changed", items: priceChanged.data.items };
   }
   throw new BackendContractError(`Unknown 409 body for ${path}`, {
-    cause: outOfStock.error,
+    cause: new AggregateError([outOfStock.error, priceChanged.error]),
   });
 }

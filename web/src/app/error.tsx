@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 export default function ErrorPage({
   retry,
 }: {
-  error: Error;
+  error: unknown;
   retry: () => void;
 }) {
   return (
