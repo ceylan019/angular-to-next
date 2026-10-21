@@ -14,7 +14,8 @@ ${COPY.cart.columns.map((column) => `    - columnheader "${column}"`).join("\n")
 const PRODUCT_ROW = `
   - row:
     - cell:
-      - link "${PRODUCT.name}"
+      - link "${PRODUCT.name}":
+        - /url: /products/${PRODUCT.slug}
     - cell /\\$\\d+\\.\\d{2}/
     - cell:
       - spinbutton "${COPY.cart.quantityFor(PRODUCT.name)}": "${String(QUANTITY)}"

@@ -1,4 +1,3 @@
-import { addFromDetail } from "../../support/cart.js";
 import { bySlug } from "../../support/catalog.js";
 import { openCheckout } from "../../support/checkout.js";
 import { COPY } from "../../support/copy.js";
@@ -6,6 +5,7 @@ import { expect, test } from "../../support/fixtures.js";
 
 const PRODUCT = bySlug("lavender-dusk");
 const QUANTITY = 2;
+const PRODUCT_PATTERN = PRODUCT.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const LABELS = COPY.checkout.labels;
 const LEGENDS = COPY.checkout.legends;
 
@@ -36,7 +36,7 @@ ${COUNTRY_OPTIONS}
 `;
 
 const SUMMARY_LINE = `
-  - listitem: /${PRODUCT.name} \\u00d7 ${String(QUANTITY)} \\$[\\d,]+\\.\\d{2}/
+  - listitem: /${PRODUCT_PATTERN} \\u00d7 ${String(QUANTITY)} \\$[\\d,]+\\.\\d{2}/
 `;
 
 const SUMMARY = `
@@ -57,9 +57,7 @@ test.describe("checkout structure @checkout", () => {
   });
 
   test("[BR-K2] order summary structure", async ({ page }) => {
-    await addFromDetail(page, PRODUCT.slug, QUANTITY);
-
-    await page.goto("/checkout");
+    await openCheckout(page, PRODUCT.slug, QUANTITY);
 
     await expect(
       page.getByRole("complementary", { name: COPY.checkout.summary }),

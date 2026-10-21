@@ -6,7 +6,8 @@ const PAGE_SIZE = 12;
 const CARD = `
   - listitem:
     - heading [level=2]:
-      - link /.+/
+      - link /.+/:
+        - /url: /^\\/products\\/[a-z0-9-]+$/
     - button "${COPY.addToCart}"
 `;
 
@@ -21,13 +22,12 @@ const SORT_OPTIONS = Object.values(COPY.list.sort.options)
 test.describe("browse structure @browse", () => {
   test("[BR-B1] product card structure", async ({ page }) => {
     await page.goto("/");
+    const cards = page
+      .getByRole("list", { name: COPY.list.products })
+      .getByRole("listitem");
 
-    await expect(
-      page
-        .getByRole("list", { name: COPY.list.products })
-        .getByRole("listitem")
-        .first(),
-    ).toMatchAriaSnapshot(CARD);
+    await expect(cards).toHaveCount(PAGE_SIZE);
+    await expect(cards.first()).toMatchAriaSnapshot(CARD);
   });
 
   test("[BR-B1] product card shows a price and a stock status", async ({

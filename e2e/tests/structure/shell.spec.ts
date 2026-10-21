@@ -1,4 +1,5 @@
 import type { Locator } from "@playwright/test";
+import { addFromDetail } from "../../support/cart.js";
 import { COPY } from "../../support/copy.js";
 import { expect, test } from "../../support/fixtures.js";
 
@@ -28,6 +29,9 @@ function navLinks(banner: Locator) {
 test.describe("shell structure @shell", () => {
   for (const path of ["/", "/cart", "/checkout", "/products/lavender-dusk"]) {
     test(`[BR-C4] header structure on ${path}`, async ({ page }) => {
+      if (path === "/checkout") {
+        await addFromDetail(page, "lavender-dusk", 1);
+      }
       await page.goto(path);
       const banner = page.getByRole("banner");
 
