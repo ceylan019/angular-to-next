@@ -9,7 +9,7 @@ export async function createTestApp(overrides: Partial<Config> = {}) {
     ...overrides,
   };
   const { db, pool } = createDb(config.databaseUrl);
-  const app = createApp({ db, config });
+  const app = createApp();
   return Promise.resolve({
     app,
     db,

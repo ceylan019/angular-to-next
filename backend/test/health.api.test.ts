@@ -1,12 +1,20 @@
 import request from "supertest";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestApp } from "./support/test-app.js";
 
 describe("health and fallback", () => {
   let app: Awaited<ReturnType<typeof createTestApp>>["app"];
 
+  let close: () => Promise<void>;
+
   beforeAll(async () => {
-    app = (await createTestApp()).app;
+    const testApp = await createTestApp();
+    app = testApp.app;
+    close = testApp.close;
+  });
+
+  afterAll(async () => {
+    await close();
   });
 
   it("answers health", async () => {
