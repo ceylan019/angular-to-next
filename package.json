@@ -11,9 +11,12 @@
     "demo": "docker compose up --build",
     "demo:test": "TEST_MODE=true docker compose up --build --wait",
     "e2e": "pnpm demo:test && pnpm --filter e2e test",
-    "traceability": "node scripts/traceability/cli.ts"
+    "traceability": "node scripts/traceability/cli.ts",
+    "lighthouse:legacy": "lhci autorun --config=lighthouse/lighthouserc.legacy.json --collect.url=${LEGACY_URL:-http://localhost:4000}/ --collect.url=${LEGACY_URL:-http://localhost:4000}/products/lavender-dusk --collect.url=${LEGACY_URL:-http://localhost:4000}/cart",
+    "lighthouse:next": "lhci autorun --config=lighthouse/lighthouserc.next.json --collect.url=${WEB_URL:-http://localhost:3000}/ --collect.url=${WEB_URL:-http://localhost:3000}/products/lavender-dusk --collect.url=${WEB_URL:-http://localhost:3000}/cart"
   },
   "devDependencies": {
+    "@lhci/cli": "0.15.1",
     "prettier": "3.9.10",
     "prettier-plugin-tailwindcss": "0.8.1"
   }

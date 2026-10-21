@@ -162,3 +162,31 @@ jobs:
         with:
           name: mutation-scripts
           path: scripts/reports/mutation
+
+  lighthouse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm demo:test
+      - run: pnpm lighthouse:legacy
+        continue-on-error: true
+      - run: pnpm lighthouse:next
+      - if: failure()
+        run: docker compose logs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-legacy
+          path: reports/lighthouse/legacy
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-next
+          path: reports/lighthouse/next

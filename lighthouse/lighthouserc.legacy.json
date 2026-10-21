@@ -1,0 +1,16 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://localhost:4000/",
+        "http://localhost:4000/products/lavender-dusk",
+        "http://localhost:4000/cart"
+      ],
+      "numberOfRuns": 5
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "reports/lighthouse/legacy"
+    }
+  }
+}
