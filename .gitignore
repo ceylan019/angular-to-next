@@ -1,0 +1,10 @@
+node_modules
+dist
+.next
+coverage
+reports
+test-results
+playwright-report
+.stryker-tmp
+backend/public/images
+.env*
