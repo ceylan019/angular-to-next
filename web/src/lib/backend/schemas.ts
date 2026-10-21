@@ -1,13 +1,5 @@
 import { z } from "zod";
-
-export const FAMILY_SLUGS = [
-  "floral",
-  "woody",
-  "fresh",
-  "gourmand",
-  "spicy",
-  "herbal",
-] as const;
+import { FAMILY_SLUGS } from "./families";
 
 export const COUNTRY_CODES = ["US", "CA", "GB", "DE", "NL"] as const;
 
