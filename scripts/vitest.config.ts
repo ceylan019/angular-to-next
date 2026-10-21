@@ -6,6 +6,7 @@ export default defineConfig({
       "traceability/**/*.test.ts",
       "metrics/**/*.test.ts",
       "results/**/*.test.ts",
+      "site/**/*.test.ts",
     ],
     environment: "node",
   },

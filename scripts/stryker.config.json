@@ -5,7 +5,8 @@
     "traceability/traceability.ts",
     "metrics/audit.ts",
     "metrics/measurements.ts",
-    "results/results.ts"
+    "results/results.ts",
+    "site/build-site.ts"
   ],
   "incremental": false,
   "thresholds": {
