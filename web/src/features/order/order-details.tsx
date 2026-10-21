@@ -24,7 +24,7 @@ export function OrderDetails({ order }: { order: Order }) {
                 key={index}
                 className="flex items-baseline justify-between gap-4 text-ink"
               >
-                <span>{`${line.name} × ${String(line.quantity)}`}</span>
+                <span className="min-w-0 break-words">{`${line.name} × ${String(line.quantity)}`}</span>
                 <span className="font-medium">
                   {formatUsd(line.lineTotalCents)}
                 </span>
@@ -36,13 +36,13 @@ export function OrderDetails({ order }: { order: Order }) {
         <div className={PANEL}>
           <h2 className="text-lg font-semibold text-ink">Shipping to</h2>
           <address className="-mt-3 flex flex-col gap-1 text-ink not-italic">
-            <span>{shipping.fullName}</span>
-            <span>{shipping.line1}</span>
+            <span className="break-words">{shipping.fullName}</span>
+            <span className="break-words">{shipping.line1}</span>
             {shipping.line2 === null || shipping.line2 === "" ? null : (
-              <span>{shipping.line2}</span>
+              <span className="break-words">{shipping.line2}</span>
             )}
-            <span>{`${shipping.city} ${shipping.postalCode}`}</span>
-            <span>{countryName(shipping.country)}</span>
+            <span className="break-words">{`${shipping.city} ${shipping.postalCode}`}</span>
+            <span className="break-words">{countryName(shipping.country)}</span>
           </address>
           <Button asChild focus="outline" className="h-10 w-full">
             <Link href="/">Continue shopping</Link>
