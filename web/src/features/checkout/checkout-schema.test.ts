@@ -46,6 +46,18 @@ const CONTRACT_FIELD_CASES: [keyof CheckoutValues, string, string, string][] = [
   ["email", "two at signs", "a@b@example.com", "Enter a valid email address"],
   [
     "email",
+    "text after the domain",
+    "ada@example.com extra",
+    "Enter a valid email address",
+  ],
+  [
+    "email",
+    "a second address after the domain",
+    "ada@example.com@other.org",
+    "Enter a valid email address",
+  ],
+  [
+    "email",
     "255 characters",
     `${"a".repeat(255 - "@example.com".length)}@example.com`,
     "Enter a valid email address",
@@ -147,6 +159,31 @@ describe("checkout schema", () => {
   it("[BR-K2] accepts an empty and a blank second address line", () => {
     expect(schema.safeParse({ ...valid, line2: "" }).success).toBe(true);
     expect(schema.safeParse({ ...valid, line2: "   " }).success).toBe(true);
+  });
+
+  it("[BR-K2] treats a missing second address line as empty", () => {
+    const withoutLine2 = Object.fromEntries(
+      Object.entries(valid).filter(([key]) => key !== "line2"),
+    );
+
+    expect(schema.safeParse(withoutLine2).data).toEqual({
+      ...valid,
+      line2: "",
+    });
+    expect(schema.safeParse({ ...valid, line2: undefined }).data).toEqual({
+      ...valid,
+      line2: "",
+    });
+  });
+
+  it("[BR-K2] still rejects a second address line that is not text", () => {
+    for (const line2 of [null, 12, true, ["Flat 2"]]) {
+      const result = schema.safeParse({ ...valid, line2 });
+      expect(result.success).toBe(false);
+      expect(result.error?.issues.map((issue) => issue.path)).toEqual([
+        ["line2"],
+      ]);
+    }
   });
 
   it.each([
@@ -305,6 +342,14 @@ describe("toPlaceOrderInput", () => {
     const input = toPlaceOrderInput({ ...valid, line2 }, lines);
     expect(input.shipping).not.toHaveProperty("line2");
     expect(placeOrderInputSchema.safeParse(input).success).toBe(true);
+  });
+
+  it("[BR-K3] strips tabs and line breaks around the card number", () => {
+    const input = toPlaceOrderInput(
+      { ...valid, cardNumber: "\t4242 4242 4242 4242\n" },
+      lines,
+    );
+    expect(input.payment.cardNumber).toBe("4242424242424242");
   });
 
   it("[BR-K2] sends no extra keys on a cart line", () => {
