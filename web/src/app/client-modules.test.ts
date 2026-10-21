@@ -20,6 +20,7 @@ const LIST_PAGE_CLIENT_MODULES: [string, () => Promise<unknown>][] = [
   ["status region", () => import("@/components/status-region")],
   ["catalog navigation", () => import("@/features/catalog/catalog-navigation")],
   ["family filter", () => import("@/features/catalog/family-filter")],
+  ["add to cart form", () => import("@/features/cart/add-to-cart-form")],
 ];
 
 describe("client modules on the product list", () => {
