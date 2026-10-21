@@ -63,3 +63,33 @@ jobs:
         with:
           name: mutation-legacy
           path: legacy/reports/mutation
+
+  e2e:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [legacy]
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter e2e lint
+      - run: pnpm --filter e2e typecheck
+      - run: pnpm --filter e2e exec playwright install --with-deps chromium
+      - run: pnpm --filter e2e test:unit
+      - run: TEST_MODE=true docker compose up --build --wait
+      - run: pnpm --filter e2e exec playwright test --project=${{ matrix.target }}
+      - if: failure()
+        run: docker compose logs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-${{ matrix.target }}-${{ matrix.runner }}
+          path: e2e/playwright-report

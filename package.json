@@ -9,7 +9,8 @@
     "format": "git ls-files -z | xargs -0 prettier --write --ignore-unknown",
     "format:check": "git ls-files -z | xargs -0 prettier --check --ignore-unknown",
     "demo": "docker compose up --build",
-    "demo:test": "TEST_MODE=true docker compose up --build --wait"
+    "demo:test": "TEST_MODE=true docker compose up --build --wait",
+    "e2e": "pnpm demo:test && pnpm --filter e2e test"
   },
   "devDependencies": {
     "prettier": "3.9.10"
