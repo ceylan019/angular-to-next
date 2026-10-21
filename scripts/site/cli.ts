@@ -13,7 +13,12 @@ const { values } = parseArgs({
 });
 
 const out = resolve(values.out);
-const { missing } = layoutSite(resolve(values.artifacts), out, values.repo);
+const { missing } = layoutSite(
+  resolve(values.artifacts),
+  out,
+  values.repo,
+  process.cwd(),
+);
 
 console.log(
   `Wrote ${join(out, "index.html")}. Missing artifacts: ${missing.length === 0 ? "none" : missing.join(", ")}.`,
