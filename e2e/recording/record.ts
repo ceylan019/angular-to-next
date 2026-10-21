@@ -13,6 +13,7 @@ import {
 } from "../support/checkout.js";
 import { COPY } from "../support/copy.js";
 import { planSegments, stitchArgs } from "./ffmpeg.js";
+import { escapeHtml, tailOf } from "./text.js";
 
 const run = promisify(execFile);
 const FFMPEG = process.env.FFMPEG ?? "ffmpeg";
@@ -30,6 +31,34 @@ const CAPTIONS = [
 const IMAGES_TO_AWAIT = 3;
 const SETTLE_FRAMES = 45;
 const DWELL_FRAMES = 30;
+const STDERR_LINES = 20;
+const STITCH_BUFFER_BYTES = 64 * 1024 * 1024;
+
+async function requireFfmpeg(): Promise<void> {
+  try {
+    await run(FFMPEG, ["-version"]);
+  } catch (error) {
+    throw new Error(
+      `Could not run "${FFMPEG}". Install ffmpeg (for example brew install ffmpeg or apt-get install ffmpeg) or set FFMPEG to its path.`,
+      { cause: error },
+    );
+  }
+}
+
+async function stitch(args: string[]): Promise<void> {
+  try {
+    await run(FFMPEG, args, { maxBuffer: STITCH_BUFFER_BYTES });
+  } catch (error) {
+    const stderr =
+      typeof error === "object" && error !== null && "stderr" in error
+        ? String(error.stderr)
+        : String(error);
+    throw new Error(
+      `ffmpeg failed to stitch the recording. Last output:\n${tailOf(stderr, STDERR_LINES)}`,
+      { cause: error },
+    );
+  }
+}
 
 function settleFrames(frames: number): Promise<void> {
   const raf = (
@@ -130,7 +159,7 @@ async function captionImage(
 ): Promise<string> {
   const page = await browser.newPage({ viewport: { width: 640, height: 40 } });
   await page.setContent(
-    `<body style="margin:0;display:flex;align-items:center;justify-content:center;height:40px;background:#111;color:#fff;font:600 18px Helvetica,Arial,sans-serif">${text}</body>`,
+    `<body style="margin:0;display:flex;align-items:center;justify-content:center;height:40px;background:#111;color:#fff;font:600 18px Helvetica,Arial,sans-serif">${escapeHtml(text)}</body>`,
   );
   await page.screenshot({ path: file });
   await page.close();
@@ -138,6 +167,7 @@ async function captionImage(
 }
 
 test("record the same purchase in both apps", async ({ browser, request }) => {
+  await requireFfmpeg();
   const outDir = await mkdtemp(path.join(tmpdir(), "side-by-side-"));
   await resetBackend(request);
   const legacy = await recordFlow(
@@ -152,8 +182,7 @@ test("record the same purchase in both apps", async ({ browser, request }) => {
     await captionImage(browser, CAPTIONS[1], path.join(outDir, "next.png")),
   ] as const;
   const gif = path.join(outDir, "side-by-side.gif");
-  await run(
-    FFMPEG,
+  await stitch(
     stitchArgs(
       legacy.path,
       next.path,
