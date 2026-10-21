@@ -9,7 +9,7 @@ The legacy app is a purpose-built stand-in for a real one. It is written to look
 Work in progress. Each step lands as one pull request.
 
 - [x] Step 1: Repository skeleton
-- [ ] Step 2: Shared backend
+- [x] Step 2: Shared backend
 - [ ] Step 3: Legacy Angular 10 shop
 - [ ] Step 4: Shared parity suite, proven on legacy
 - [ ] Step 5: Rewrite browse
