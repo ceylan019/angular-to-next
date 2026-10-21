@@ -23,5 +23,6 @@
   "commandRunner": {
     "command": "pnpm exec vitest run --config vitest.mutation.config.ts"
   },
-  "coverageAnalysis": "off"
+  "coverageAnalysis": "off",
+  "concurrency": 4
 }
