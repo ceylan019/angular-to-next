@@ -3,3 +3,7 @@ packages:
   - web
   - e2e
   - scripts
+allowBuilds:
+  cpu-features: false
+  protobufjs: false
+  ssh2: false
