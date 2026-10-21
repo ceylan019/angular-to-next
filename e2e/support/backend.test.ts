@@ -13,6 +13,7 @@ import {
 import {
   backendUrl,
   orderCount,
+  productStock,
   requestCount,
   resetBackend,
   resetRequestCount,
@@ -178,6 +179,61 @@ describe("setProduct", () => {
 
     await expect(setProduct(api, "lavender-dusk", {})).rejects.toThrow(
       "answered 400 instead of 204",
+    );
+  });
+});
+
+describe("productStock", () => {
+  it("reads the stock of the product", async () => {
+    reply = { status: 200, body: '{"slug":"lavender-dusk","stock":23}' };
+
+    await expect(productStock(api, "lavender-dusk")).resolves.toBe(23);
+    expect(received).toEqual([
+      expect.objectContaining({
+        method: "GET",
+        url: "/api/products/lavender-dusk",
+      }),
+    ]);
+  });
+
+  it("reads a stock of zero", async () => {
+    reply = { status: 200, body: '{"stock":0}' };
+
+    await expect(productStock(api, "last-light")).resolves.toBe(0);
+  });
+
+  it("encodes the slug as one path segment", async () => {
+    reply = { status: 200, body: '{"stock":1}' };
+
+    await productStock(api, "a b/c?d");
+
+    expect(received[0]?.url).toBe("/api/products/a%20b%2Fc%3Fd");
+  });
+
+  it("fails with the status and body for an unknown slug", async () => {
+    reply = { status: 404, body: '{"error":"NOT_FOUND"}' };
+
+    await expect(productStock(api, "nope")).rejects.toThrow(
+      `GET ${base}/api/products/nope answered 404 instead of 200: {"error":"NOT_FOUND"}`,
+    );
+  });
+
+  it.each([
+    '{"stock":"3"}',
+    '{"stock":-1}',
+    '{"stock":1.5}',
+    '{"stock":null}',
+    "{}",
+    "[3]",
+    "3",
+    "null",
+    "<html>",
+    "",
+  ])("fails on the body %j", async (body) => {
+    reply = { status: 200, body };
+
+    await expect(productStock(api, "lavender-dusk")).rejects.toThrow(
+      `GET ${base}/api/products/lavender-dusk answered without a stock: ${body}`,
     );
   });
 });

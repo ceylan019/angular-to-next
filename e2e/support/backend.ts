@@ -57,6 +57,25 @@ async function readCount(
   return count;
 }
 
+export async function productStock(
+  request: APIRequestContext,
+  slug: string,
+): Promise<number> {
+  const url = `${backendUrl()}/api/products/${encodeURIComponent(slug)}`;
+  const response = await request.get(url);
+  await expectStatus(response, 200, `GET ${url}`);
+  const text = await response.text();
+  const body = parse(text);
+  const stock =
+    typeof body === "object" && body !== null && "stock" in body
+      ? body.stock
+      : undefined;
+  if (typeof stock !== "number" || !Number.isInteger(stock) || stock < 0) {
+    throw new Error(`GET ${url} answered without a stock: ${text}`);
+  }
+  return stock;
+}
+
 export async function resetBackend(request: APIRequestContext): Promise<void> {
   await post(request, "/reset");
 }
