@@ -8,9 +8,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   repo:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -23,6 +28,7 @@ jobs:
 
   backend:
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -58,12 +64,24 @@ jobs:
       - run: pnpm --filter web lint
       - run: pnpm --filter web typecheck
       - run: pnpm --filter web test --coverage
-      - run: pnpm --filter web mutation
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-web
           path: web/coverage
+
+  web-mutation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web mutation --concurrency 2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -245,7 +263,8 @@ jobs:
             reports/audit-next.json
 
   results:
-    needs: [metrics, lighthouse, web, legacy-unit, legacy-mutation]
+    needs:
+      [metrics, lighthouse, web, web-mutation, legacy-unit, legacy-mutation]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -301,7 +320,16 @@ jobs:
             README.md
 
   site:
-    needs: [backend, web, legacy-unit, legacy-mutation, e2e, lighthouse]
+    needs:
+      [
+        backend,
+        web,
+        web-mutation,
+        legacy-unit,
+        legacy-mutation,
+        e2e,
+        lighthouse,
+      ]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -320,10 +348,23 @@ jobs:
           path: site
 
   pages:
-    needs: [site, backend, web, legacy-unit, legacy-mutation, e2e, lighthouse]
+    needs:
+      [
+        site,
+        backend,
+        web,
+        web-mutation,
+        legacy-unit,
+        legacy-mutation,
+        e2e,
+        lighthouse,
+      ]
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && success() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write
