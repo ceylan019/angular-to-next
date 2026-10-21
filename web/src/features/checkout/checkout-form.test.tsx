@@ -6,7 +6,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { Component, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
 import { CheckoutForm } from "./checkout-form";
@@ -137,6 +137,7 @@ async function settle(): Promise<void> {
 const serverContainers: HTMLElement[] = [];
 
 afterEach(async () => {
+  vi.useRealTimers();
   for (const container of serverContainers.splice(0)) container.remove();
   await act(async () => {
     for (const answers of holds.splice(0)) {
@@ -152,6 +153,25 @@ function serverHtml(element: ReactElement): HTMLElement {
   document.body.append(container);
   serverContainers.push(container);
   return container;
+}
+
+class Boundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  render() {
+    return this.state.error === null ? (
+      this.props.children
+    ) : (
+      <p>{`Caught: ${this.state.error.message}`}</p>
+    );
+  }
 }
 
 describe("CheckoutForm", () => {
@@ -614,5 +634,194 @@ describe("CheckoutForm", () => {
       ...VALID,
       email: "early@example.com",
     });
+  });
+  it.each<[string, PlaceOrderActionResult, string]>([
+    ["declined", { status: "declined" }, DECLINED],
+    [
+      "out of stock",
+      { status: "out-of-stock", messages: [outOfStock("Ember & Clove")] },
+      outOfStock("Ember & Clove"),
+    ],
+    ["price changed", { status: "price-changed" }, PRICE_CHANGED],
+    [
+      "invalid",
+      { status: "invalid" },
+      "Please check your details and try again.",
+    ],
+  ])(
+    "[BR-K6] returns focus to Place order after a %s answer",
+    async (_label, result, message) => {
+      render(<CheckoutForm action={answering(result, result)} />);
+      fill();
+      control("CVC").focus();
+      expect(control("CVC")).toHaveFocus();
+
+      placeOrder();
+
+      expect(
+        await within(alertRegion()).findByText(message),
+      ).toBeInTheDocument();
+      await waitFor(() => {
+        expect(placeOrderButton()).toHaveFocus();
+      });
+
+      control("Email").focus();
+      placeOrder();
+
+      await waitFor(() => {
+        expect(placeOrderButton()).toHaveFocus();
+      });
+      expect(alertRegion()).toHaveTextContent(message);
+    },
+  );
+
+  it("[BR-K6] leaves focus alone until an answer arrives", async () => {
+    const { action, answer } = holding();
+    render(<CheckoutForm action={action} />);
+    fill();
+    control("CVC").focus();
+
+    placeOrder();
+
+    await screen.findByRole("button", { name: "Placing order..." });
+    await settle();
+    expect(control("CVC")).toHaveFocus();
+
+    await answer({ status: "declined" });
+
+    await waitFor(() => {
+      expect(placeOrderButton()).toHaveFocus();
+    });
+  });
+
+  it("[BR-K4] shows the backend validation alert when no affected item can be named", async () => {
+    render(
+      <CheckoutForm
+        action={answering({ status: "out-of-stock", messages: [] })}
+      />,
+    );
+    fill();
+
+    placeOrder();
+
+    expect(
+      await within(alertRegion()).findByText(
+        "Please check your details and try again.",
+      ),
+    ).toBeInTheDocument();
+    expect(alertRegion().textContent).toBe(
+      "Please check your details and try again.",
+    );
+  });
+
+  it("[BR-K4] shows a repeated out of stock sentence once per affected item", async () => {
+    const consoleError = vi.spyOn(console, "error");
+    const twin = outOfStock("Twin Wick");
+    const action = answering(
+      { status: "out-of-stock", messages: [twin, twin] },
+      { status: "out-of-stock", messages: [twin, twin, twin] },
+    );
+    render(<CheckoutForm action={action} />);
+    fill();
+
+    placeOrder();
+
+    expect(await within(alertRegion()).findAllByText(twin)).toHaveLength(2);
+
+    placeOrder();
+
+    await waitFor(() => {
+      expect(within(alertRegion()).getAllByText(twin)).toHaveLength(3);
+    });
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("[BR-K3] checks the expiry against the clock when Place order is clicked", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-31T23:59:59.000Z"));
+    const action = answering({ status: "declined" });
+    render(<CheckoutForm action={action} />);
+    fill({ expiry: "10/26" });
+
+    vi.setSystemTime(new Date("2026-11-01T00:00:00.000Z"));
+    placeOrder();
+
+    await waitFor(() => {
+      expect(errorFor("Expiry (MM/YY)")).toBe("Your card has expired");
+    });
+    expect(control("Expiry (MM/YY)")).toHaveFocus();
+    expect(action).not.toHaveBeenCalled();
+  });
+
+  it("[BR-K3] accepts a card in the last moment of its expiry month", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-30T12:00:00.000Z"));
+    const action = answering({ status: "declined" });
+    render(<CheckoutForm action={action} />);
+    fill({ expiry: "10/26" });
+
+    vi.setSystemTime(new Date("2026-10-31T23:59:59.999Z"));
+    placeOrder();
+
+    expect(
+      await within(alertRegion()).findByText(DECLINED),
+    ).toBeInTheDocument();
+    expect(action).toHaveBeenCalledWith({ ...VALID, expiry: "10/26" });
+  });
+
+  it("lets a rejected action reach the error boundary", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const action = vi
+      .fn<Action>()
+      .mockRejectedValue(new Error("Backend request failed"));
+    render(
+      <Boundary>
+        <CheckoutForm action={action} />
+      </Boundary>,
+    );
+    fill();
+
+    placeOrder();
+
+    expect(
+      await screen.findByText("Caught: Backend request failed"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it("[BR-K2] keeps focus on the field being typed in until the next submit", async () => {
+    const action = answering();
+    render(<CheckoutForm action={action} />);
+    fill({ email: "ada@example", cvc: "12" });
+
+    placeOrder();
+
+    await waitFor(() => {
+      expect(control("Email")).toHaveFocus();
+    });
+
+    control("CVC").focus();
+    type("CVC", "1234");
+
+    expect(await screen.findByText("Enter a valid 3 digit CVC")).toBeVisible();
+    await settle();
+    expect(control("CVC")).toHaveFocus();
+
+    type("CVC", "123");
+
+    await waitFor(() => {
+      expect(errorFor("CVC")).toBeNull();
+    });
+    await settle();
+    expect(control("CVC")).toHaveFocus();
+    expect(errorFor("Email")).toBe("Enter a valid email address");
+
+    placeOrder();
+
+    await waitFor(() => {
+      expect(control("Email")).toHaveFocus();
+    });
+    expect(action).not.toHaveBeenCalled();
   });
 });

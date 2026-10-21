@@ -89,6 +89,7 @@ export function CheckoutForm({ action }: { action: PlaceOrder }) {
   const hydrated = useHydrated();
   const idPrefix = useId();
   const formRef = useRef<HTMLFormElement>(null);
+  const placeOrderRef = useRef<HTMLButtonElement>(null);
   const submitting = useRef(false);
   const {
     register,
@@ -121,6 +122,11 @@ export function CheckoutForm({ action }: { action: PlaceOrder }) {
       ?.querySelector<HTMLElement>('[aria-invalid="true"]')
       ?.focus();
   }, [submitCount]);
+
+  useEffect(() => {
+    if (pending || result === null) return;
+    placeOrderRef.current?.focus();
+  }, [pending, result]);
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     if (submitting.current) {
@@ -169,8 +175,8 @@ export function CheckoutForm({ action }: { action: PlaceOrder }) {
   return (
     <div className="flex flex-col gap-4">
       <div role="alert" className="text-sm font-medium text-destructive">
-        {messages.map((message) => (
-          <p key={message}>{message}</p>
+        {messages.map((message, index) => (
+          <p key={index}>{message}</p>
         ))}
       </div>
       <form
@@ -226,6 +232,7 @@ export function CheckoutForm({ action }: { action: PlaceOrder }) {
           </div>
         </fieldset>
         <Button
+          ref={placeOrderRef}
           type="submit"
           disabled={!hydrated || pending}
           focus="outline"

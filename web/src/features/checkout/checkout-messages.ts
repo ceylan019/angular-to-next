@@ -16,7 +16,7 @@ export function alertMessages(result: PlaceOrderActionResult): string[] {
     case "declined":
       return [DECLINED];
     case "out-of-stock":
-      return result.messages;
+      return result.messages.length > 0 ? result.messages : [INVALID];
     case "price-changed":
       return [PRICE_CHANGED];
     case "invalid":

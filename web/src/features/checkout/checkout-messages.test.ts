@@ -37,7 +37,18 @@ describe("checkout messages", () => {
     );
   });
 
-  it("[BR-K4] shows nothing for an out of stock result without named items", () => {
-    expect(alertMessages({ status: "out-of-stock", messages: [] })).toEqual([]);
+  it("[BR-K4] falls back to the backend validation alert when no item can be named", () => {
+    expect(alertMessages({ status: "out-of-stock", messages: [] })).toEqual([
+      "Please check your details and try again.",
+    ]);
+  });
+
+  it("[BR-K4] keeps a single named item without the fallback", () => {
+    expect(
+      alertMessages({
+        status: "out-of-stock",
+        messages: [outOfStockMessage("Last Light")],
+      }),
+    ).toEqual([outOfStockMessage("Last Light")]);
   });
 });

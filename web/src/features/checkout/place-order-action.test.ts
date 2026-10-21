@@ -157,7 +157,7 @@ describe("placeOrderAction", () => {
     expect(redirect).toHaveBeenCalledTimes(1);
     expect(redirect).toHaveBeenCalledWith("/order/WC-ABC123");
     expect(wroteBeforeRedirecting()).toBe(true);
-    expect(getProduct).not.toHaveBeenCalled();
+    expect(vi.mocked(getProduct).mock.calls).toEqual([["lavender-dusk"]]);
   });
 
   it("[BR-K3] returns declined and keeps the cart", async () => {
@@ -171,7 +171,7 @@ describe("placeOrderAction", () => {
     expect(placeOrder).toHaveBeenCalledWith(expectedInput);
     expect(set).not.toHaveBeenCalled();
     expect(redirect).not.toHaveBeenCalled();
-    expect(getProduct).not.toHaveBeenCalled();
+    expect(vi.mocked(getProduct).mock.calls).toEqual([["lavender-dusk"]]);
   });
 
   it("[BR-K4] adjusts the cart and names affected items", async () => {
@@ -192,7 +192,10 @@ describe("placeOrderAction", () => {
       lavenderLine,
       { ...emberLine, quantity: 1 },
     ]);
-    expect(vi.mocked(getProduct).mock.calls).toEqual([["ember-clove"]]);
+    expect(vi.mocked(getProduct).mock.calls).toEqual([
+      ["lavender-dusk"],
+      ["ember-clove"],
+    ]);
     expect(redirect).not.toHaveBeenCalled();
   });
 
@@ -211,7 +214,7 @@ describe("placeOrderAction", () => {
     expect(redirect).toHaveBeenCalledTimes(1);
     expect(redirect).toHaveBeenCalledWith("/cart");
     expect(wroteBeforeRedirecting()).toBe(true);
-    expect(getProduct).not.toHaveBeenCalled();
+    expect(vi.mocked(getProduct).mock.calls).toEqual([["last-light"]]);
   });
 
   it("[BR-K4] applies price changes", async () => {
@@ -230,7 +233,10 @@ describe("placeOrderAction", () => {
       emberLine,
     ]);
     expect(redirect).not.toHaveBeenCalled();
-    expect(getProduct).not.toHaveBeenCalled();
+    expect(vi.mocked(getProduct).mock.calls).toEqual([
+      ["lavender-dusk"],
+      ["ember-clove"],
+    ]);
   });
 
   it("[BR-K2] rejects invalid values without calling the backend", async () => {
@@ -241,6 +247,7 @@ describe("placeOrderAction", () => {
     ).resolves.toEqual({ status: "invalid" });
 
     expect(placeOrder).not.toHaveBeenCalled();
+    expect(getProduct).not.toHaveBeenCalled();
     expect(set).not.toHaveBeenCalled();
     expect(redirect).not.toHaveBeenCalled();
   });
@@ -301,6 +308,7 @@ describe("placeOrderAction", () => {
       ).resolves.toEqual({ status: "invalid" });
 
       expect(placeOrder).not.toHaveBeenCalled();
+      expect(getProduct).not.toHaveBeenCalled();
       expect(set).not.toHaveBeenCalled();
     },
   );
@@ -407,7 +415,7 @@ describe("placeOrderAction", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("[BR-K4] leaves out items it cannot name and still adjusts them", async () => {
+  it("[BR-K4] orders only the candles the page can show and names what it ordered", async () => {
     cartHolds([lavenderLine, emberLine, lastLightLine]);
     products(
       ["lavender-dusk", lavenderDusk],
@@ -418,8 +426,6 @@ describe("placeOrderAction", () => {
       kind: "out-of-stock",
       items: [
         { productId: 7, available: 1 },
-        { productId: 9, available: 1 },
-        { productId: 11, available: 0 },
         { productId: 99, available: 0 },
       ],
     });
@@ -429,19 +435,18 @@ describe("placeOrderAction", () => {
       messages: [outOfStockSentence("Lavender Dusk")],
     });
 
-    expect(writtenCart()).toEqual([
-      { ...lavenderLine, quantity: 1 },
-      { ...emberLine, quantity: 1 },
-    ]);
+    expect(placeOrder).toHaveBeenCalledWith(expectedInput);
+    expect(writtenCart()).toEqual([{ ...lavenderLine, quantity: 1 }]);
     expect(
       vi
         .mocked(getProduct)
         .mock.calls.map(([slug]) => slug)
         .sort(),
     ).toEqual(["ember-clove", "last-light", "lavender-dusk"]);
+    expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("[BR-K4] stays on checkout with no sentence when the only affected candle is gone", async () => {
+  it("[BR-K4] stays on checkout without a sentence when no ordered candle is affected", async () => {
     cartHolds([lavenderLine, lastLightLine]);
     products(["lavender-dusk", lavenderDusk], ["last-light", null]);
     vi.mocked(placeOrder).mockResolvedValue({
@@ -454,8 +459,85 @@ describe("placeOrderAction", () => {
       messages: [],
     });
 
+    expect(placeOrder).toHaveBeenCalledWith(expectedInput);
     expect(writtenCart()).toEqual([lavenderLine]);
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("[BR-K1] orders only the candles that still exist and clears the cart", async () => {
+    cartHolds([lastLightLine, lavenderLine, emberLine]);
+    products(
+      ["lavender-dusk", lavenderDusk],
+      ["ember-clove", { ...emberClove, id: 42 }],
+      ["last-light", null],
+    );
+    vi.mocked(placeOrder).mockResolvedValue({
+      kind: "placed",
+      order: { ...sampleOrder, orderNumber: "WC-ABC123" },
+    });
+
+    await expect(placeOrderAction(values)).rejects.toThrow(
+      "NEXT_REDIRECT;/order/WC-ABC123",
+    );
+
+    expect(placeOrder).toHaveBeenCalledTimes(1);
+    expect(placeOrder).toHaveBeenCalledWith(expectedInput);
+    expect(writtenCart()).toEqual([]);
+    expect(redirect).toHaveBeenCalledTimes(1);
+    expect(redirect).toHaveBeenCalledWith("/order/WC-ABC123");
+  });
+
+  it("[BR-K1] redirects to the cart when no candle in the cart exists any more", async () => {
+    cartHolds([lastLightLine, emberLine]);
+    products(["ember-clove", { ...emberClove, id: 42 }], ["last-light", null]);
+
+    await expect(placeOrderAction(values)).rejects.toThrow(
+      "NEXT_REDIRECT;/cart",
+    );
+
+    expect(redirect).toHaveBeenCalledTimes(1);
+    expect(redirect).toHaveBeenCalledWith("/cart");
+    expect(placeOrder).not.toHaveBeenCalled();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("[BR-K4] keeps only the lines it ordered when prices change", async () => {
+    cartHolds([lastLightLine, lavenderLine]);
+    products(["lavender-dusk", lavenderDusk], ["last-light", null]);
+    vi.mocked(placeOrder).mockResolvedValue({
+      kind: "price-changed",
+      items: [{ productId: 7, unitPriceCents: 1900 }],
+    });
+
+    await expect(placeOrderAction(values)).resolves.toEqual({
+      status: "price-changed",
+    });
+
+    expect(placeOrder).toHaveBeenCalledWith(expectedInput);
+    expect(writtenCart()).toEqual([{ ...lavenderLine, unitPriceCents: 1900 }]);
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("[BR-K4] redirects to the cart when the adjustment empties the lines it ordered", async () => {
+    cartHolds([lavenderLine, lastLightLine]);
+    products(["lavender-dusk", null], ["last-light", lastLight]);
+    vi.mocked(placeOrder).mockResolvedValue({
+      kind: "out-of-stock",
+      items: [{ productId: 11, available: 0 }],
+    });
+
+    await expect(placeOrderAction(values)).rejects.toThrow(
+      "NEXT_REDIRECT;/cart",
+    );
+
+    expect(placeOrder).toHaveBeenCalledWith({
+      ...expectedInput,
+      lines: [{ productId: 11, quantity: 1, unitPriceCents: 2400 }],
+    });
+    expect(writtenCart()).toEqual([]);
+    expect(redirect).toHaveBeenCalledTimes(1);
+    expect(redirect).toHaveBeenCalledWith("/cart");
+    expect(wroteBeforeRedirecting()).toBe(true);
   });
 
   it("lets a backend outage while placing the order reach the error page and keeps the cart", async () => {
@@ -479,21 +561,20 @@ describe("placeOrderAction", () => {
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("[BR-K4] saves the adjusted cart before a backend outage while naming items reaches the error page", async () => {
-    cartHolds([lavenderLine, emberLine]);
-    const failure = new BackendUnavailableError("down");
-    vi.mocked(getProduct).mockRejectedValue(failure);
-    vi.mocked(placeOrder).mockResolvedValue({
-      kind: "out-of-stock",
-      items: [{ productId: 9, available: 1 }],
-    });
+  it.each([
+    ["an outage", new BackendUnavailableError("down")],
+    ["a contract violation", new BackendContractError("bad shape")],
+  ])(
+    "lets %s while checking the candles reach the error page before ordering",
+    async (_label, failure) => {
+      cartHolds([lavenderLine, emberLine]);
+      vi.mocked(getProduct).mockRejectedValue(failure);
 
-    await expect(placeOrderAction(values)).rejects.toBe(failure);
+      await expect(placeOrderAction(values)).rejects.toBe(failure);
 
-    expect(writtenCart()).toEqual([
-      lavenderLine,
-      { ...emberLine, quantity: 1 },
-    ]);
-    expect(redirect).not.toHaveBeenCalled();
-  });
+      expect(placeOrder).not.toHaveBeenCalled();
+      expect(set).not.toHaveBeenCalled();
+      expect(redirect).not.toHaveBeenCalled();
+    },
+  );
 });

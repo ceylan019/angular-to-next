@@ -30,7 +30,12 @@ export async function placeOrderAction(
   const parsed = buildCheckoutSchema(new Date()).safeParse(values);
   if (!parsed.success) return { status: "invalid" };
 
-  const result = await placeOrder(toPlaceOrderInput(parsed.data, lines));
+  const rows = buildCartView(lines, await fetchCartProducts(lines));
+  if (rows.length === 0) redirect("/cart");
+  const shown = new Set(rows.map((row) => row.productId));
+  const ordered = lines.filter((line) => shown.has(line.productId));
+
+  const result = await placeOrder(toPlaceOrderInput(parsed.data, ordered));
   switch (result.kind) {
     case "placed":
       await writeCart([]);
@@ -40,19 +45,18 @@ export async function placeOrderAction(
     case "invalid":
       return { status: "invalid" };
     case "price-changed":
-      await writeCart(applyPriceChanges(lines, result.items));
+      await writeCart(applyPriceChanges(ordered, result.items));
       return { status: "price-changed" };
     case "out-of-stock": {
-      const remaining = applyStockLimits(lines, result.items);
+      const remaining = applyStockLimits(ordered, result.items);
       await writeCart(remaining);
       if (remaining.length === 0) redirect("/cart");
-      const affected = lines.filter((line) =>
-        result.items.some((item) => item.productId === line.productId),
-      );
-      const rows = buildCartView(affected, await fetchCartProducts(affected));
+      const affected = new Set(result.items.map((item) => item.productId));
       return {
         status: "out-of-stock",
-        messages: rows.map((row) => outOfStockMessage(row.name)),
+        messages: rows
+          .filter((row) => affected.has(row.productId))
+          .map((row) => outOfStockMessage(row.name)),
       };
     }
   }
