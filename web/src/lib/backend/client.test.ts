@@ -346,51 +346,90 @@ describe("placeOrder", () => {
   const stockItems = [{ productId: 7, available: 1 }];
   const priceItems = [{ productId: 7, unitPriceCents: 1700 }];
 
-  const PLACE_ORDER_CASES = [
-    ["[BR-K3] 201", 201, sampleOrder, { kind: "placed", order: sampleOrder }],
+  const mockOrders = (status: number, body: unknown) => {
+    server.use(
+      http.post(`${BASE}/api/orders`, () =>
+        HttpResponse.json(body, { status }),
+      ),
+    );
+  };
+
+  it.each([
+    ["201", 201, sampleOrder, { kind: "placed", order: sampleOrder }],
+  ] as const)(
+    "[BR-K5] maps %s to %s",
+    async (_label, status, body, expected) => {
+      mockOrders(status, body);
+      await expect(placeOrder(placeOrderInput)).resolves.toEqual(expected);
+    },
+  );
+
+  it.each([
     [
-      "[BR-K4] 400 VALIDATION",
+      "400 VALIDATION",
       400,
       { error: "VALIDATION", fields: ["contact.email", "payment.cvc"] },
       { kind: "invalid", fields: ["contact.email", "payment.cvc"] },
     ],
     [
-      "[BR-K4] 400 VALIDATION without fields to report",
+      "400 VALIDATION without fields to report",
       400,
       { error: "VALIDATION", fields: [] },
       { kind: "invalid", fields: [] },
     ],
+  ] as const)(
+    "[BR-K2] maps %s to %s",
+    async (_label, status, body, expected) => {
+      mockOrders(status, body);
+      await expect(placeOrder(placeOrderInput)).resolves.toEqual(expected);
+    },
+  );
+
+  it.each([
     [
-      "[BR-K5] 402 CARD_DECLINED",
+      "402 CARD_DECLINED",
       402,
       { error: "CARD_DECLINED" },
       { kind: "declined" },
     ],
+  ] as const)(
+    "[BR-K3] maps %s to %s",
+    async (_label, status, body, expected) => {
+      mockOrders(status, body);
+      await expect(placeOrder(placeOrderInput)).resolves.toEqual(expected);
+    },
+  );
+
+  it.each([
     [
-      "[BR-K5] 409 OUT_OF_STOCK",
+      "409 OUT_OF_STOCK",
       409,
       { error: "OUT_OF_STOCK", items: stockItems },
       { kind: "out-of-stock", items: stockItems },
     ],
     [
-      "[BR-K5] 409 PRICE_CHANGED",
+      "409 PRICE_CHANGED",
       409,
       { error: "PRICE_CHANGED", items: priceItems },
       { kind: "price-changed", items: priceItems },
     ],
-  ] as const;
-
-  it.each(PLACE_ORDER_CASES)(
-    "maps %s to the result",
+  ] as const)(
+    "[BR-K4] maps %s to %s",
     async (_label, status, body, expected) => {
-      server.use(
-        http.post(`${BASE}/api/orders`, () =>
-          HttpResponse.json(body, { status }),
-        ),
-      );
+      mockOrders(status, body);
       await expect(placeOrder(placeOrderInput)).resolves.toEqual(expected);
     },
   );
+
+  it("keeps both parse errors as the cause of an unknown 409 body", async () => {
+    mockOrders(409, { error: "SOMETHING_ELSE" });
+    const failure = await placeOrder(placeOrderInput).catch(
+      (error: unknown) => error,
+    );
+    const cause = (failure as BackendContractError).cause;
+    expect(cause).toBeInstanceOf(AggregateError);
+    expect((cause as AggregateError).errors).toHaveLength(2);
+  });
 
   it("posts the input as JSON", async () => {
     let method = "";
@@ -467,5 +506,99 @@ describe("placeOrder", () => {
     await expect(placeOrder(placeOrderInput)).rejects.toBeInstanceOf(
       BackendUnavailableError,
     );
+  });
+});
+
+describe("body read failures", () => {
+  function stallingStream(onStart?: () => void) {
+    return new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"par'));
+        onStart?.();
+      },
+    });
+  }
+
+  it("raises BackendUnavailableError when the body stream errors partway", async () => {
+    const reset = new TypeError("terminated");
+    server.use(
+      http.get(`${BASE}/api/products/lavender-dusk`, () => {
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('{"par'));
+          },
+          pull(controller) {
+            controller.error(reset);
+          },
+        });
+        return new HttpResponse(body, {
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    );
+    const failure = await getProduct("lavender-dusk").catch(
+      (error: unknown) => error,
+    );
+    expect(failure).toBeInstanceOf(BackendUnavailableError);
+    expect((failure as BackendUnavailableError).cause).toBeDefined();
+  });
+
+  it("raises BackendUnavailableError when the timeout fires during the body", async () => {
+    const controller = new AbortController();
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
+    const reason = new DOMException("timed out", "TimeoutError");
+    server.use(
+      http.get(`${BASE}/api/products/lavender-dusk`, () => {
+        const body = stallingStream(() => {
+          setTimeout(() => {
+            controller.abort(reason);
+          }, 10);
+        });
+        return new HttpResponse(body, {
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    );
+    const failure = await getProduct("lavender-dusk").catch(
+      (error: unknown) => error,
+    );
+    expect(failure).toBeInstanceOf(BackendUnavailableError);
+    expect((failure as BackendUnavailableError).cause).toBe(reason);
+  });
+});
+
+describe("path segment validation", () => {
+  it.each([".", "..", "", "Upper", "a b", "a/b", "-a", "a-"])(
+    "getProduct returns null without fetching for %j",
+    async (slug) => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch");
+      await expect(getProduct(slug)).resolves.toBeNull();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([".", "..", "", "wc-ab12cd", "WC-AB12C", "WC-AB12CDE", "WC-AB12C!"])(
+    "getOrder returns null without fetching for %j",
+    async (orderNumber) => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch");
+      await expect(getOrder(orderNumber)).resolves.toBeNull();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe("unread bodies", () => {
+  it.each([
+    ["a 500", 500],
+    ["an unexpected 403", 403],
+    ["a 404", 404],
+  ])("cancels the body of %s", async (_label, status) => {
+    const cancel = vi.fn(() => Promise.resolve());
+    const body = new ReadableStream<Uint8Array>({ cancel });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(body, { status }),
+    );
+    await getProduct("lavender-dusk").catch(() => undefined);
+    expect(cancel).toHaveBeenCalledTimes(1);
   });
 });
