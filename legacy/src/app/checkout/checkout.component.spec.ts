@@ -652,6 +652,34 @@ describe('CheckoutComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/order', 'WC-ABC123']);
   }));
 
+  it('[BR-K3] keeps the declined alert when the retry fails field validation', fakeAsync(() => {
+    setup();
+    fill();
+    submit();
+    pending().flush(
+      { error: 'CARD_DECLINED' },
+      { status: 402, statusText: 'Payment Required' },
+    );
+    fixture.detectChanges();
+    type('CVC', '');
+    submit();
+    expect(alertText()).toBe('Your card was declined.');
+    expect(errorFor('CVC')).toBe('Enter the CVC');
+    expect(document.activeElement).toBe(control('CVC'));
+    noPost();
+  }));
+
+  it('[BR-K2] trims an email that reaches the model with surrounding spaces', fakeAsync(() => {
+    setup();
+    fill();
+    fixture.componentInstance.model.email = '  ada@example.com  ';
+    fixture.detectChanges();
+    tick();
+    fixture.detectChanges();
+    submit();
+    expect(pending().request.body.contact.email).toBe('ada@example.com');
+  }));
+
   it('[BR-K4] adjusts the cart and names the item when stock is short', fakeAsync(() => {
     setup([
       { product: LAVENDER, quantity: 1 },
@@ -894,12 +922,29 @@ describe('CheckoutComponent', () => {
     });
   }));
 
-  it('[BR-C5] [KD-03] copies the shipping rule into the component', fakeAsync(() => {
+  it('[BR-C5] [KD-03] copies the shipping rule into the component for a cart with items', fakeAsync(() => {
     setup();
     const component = fixture.componentInstance;
     expect(component.calcShipping(50)).toBe(5.95);
     expect(component.calcShipping(50.01)).toBe(0);
     expect(component.calcShipping(0)).toBe(5.95);
+  }));
+
+  it('[BR-C5] [KD-03] the copied shipping rule keeps the empty cart guard', fakeAsync(() => {
+    setup([]);
+    const component = fixture.componentInstance;
+    expect(component.calcShipping(0)).toBe(0);
+    expect(component.calcShipping(18)).toBe(0);
+  }));
+
+  it('[BR-C5] [KD-03] an empty cart rendered on the server ships free', fakeAsync(() => {
+    setup([]);
+    expect(summaryLines()).toEqual([]);
+    expect(summary()).toEqual({
+      Subtotal: '$0.00',
+      Shipping: 'Free',
+      Total: '$0.00',
+    });
   }));
 
   it('[BR-C5] updates the summary when the cart changes', fakeAsync(() => {
