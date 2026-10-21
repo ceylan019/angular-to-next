@@ -1,7 +1,13 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "command",
-  "mutate": ["src/catalog/catalog-query.ts"],
+  "mutate": [
+    "src/catalog/catalog-query.ts",
+    "src/orders/pricing.ts",
+    "src/orders/payment.ts",
+    "src/orders/order.schema.ts",
+    "src/orders/order-number.ts"
+  ],
   "thresholds": {
     "high": 95,
     "low": 90,
@@ -17,7 +23,7 @@
     "fileName": "reports/mutation/mutation.json"
   },
   "commandRunner": {
-    "command": "pnpm exec vitest run --config vitest.unit.config.ts src/catalog"
+    "command": "pnpm exec vitest run --config vitest.unit.config.ts"
   },
   "coverageAnalysis": "off"
 }

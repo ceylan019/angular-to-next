@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { describe, expect, it } from "vitest";
 import { placeOrderSchema, validationFieldPaths } from "./order.schema.js";
 
@@ -110,18 +111,22 @@ describe("placeOrderSchema", () => {
     expect(pathsOf(at("a@.de"))).toEqual(["contact.email"]);
     expect(pathsOf(at("a@b."))).toEqual(["contact.email"]);
     expect(pathsOf(at(42))).toEqual(["contact.email"]);
+    expect(pathsOf(at("a@b.c d"))).toEqual(["contact.email"]);
     expect(pathsOf(at("a@b.de"))).toBeNull();
   });
 
   it("[BR-K2] email length boundary at 254", () => {
     const local = "a".repeat(64);
-    const ok = `${local}@${"b".repeat(254 - 64 - 1 - 3)}.com`;
+    const ok = `${local}@${"b".repeat(254 - 64 - 1 - 4)}.com`;
     expect(ok.length).toBe(254);
     expect(pathsOf(mutate((b) => (b.contact.email = ok)))).toBeNull();
     const tooLong = `${ok.slice(0, 64)}b${ok.slice(64)}`;
     expect(tooLong.length).toBe(255);
     expect(pathsOf(mutate((b) => (b.contact.email = tooLong)))).toEqual([
       "contact.email",
+    ]);
+    expect(messagesOf(mutate((b) => (b.contact.email = tooLong)))).toEqual([
+      "Enter a valid email address",
     ]);
   });
 
@@ -175,6 +180,7 @@ describe("placeOrderSchema", () => {
       "Use 200 characters or fewer",
     ]);
     expect(pathsOf(at(5))).toEqual(["shipping.line2"]);
+    expect(messagesOf(at(5))).toEqual(["Use 200 characters or fewer"]);
     expect(schema.safeParse(at("  Flat 2 ")).data?.shipping.line2).toBe(
       "Flat 2",
     );
@@ -213,6 +219,7 @@ describe("placeOrderSchema", () => {
     const at = (v: unknown) =>
       mutate((b) => ((b.shipping as { country: unknown }).country = v));
     expect(pathsOf(at("FR"))).toEqual(["shipping.country"]);
+    expect(messagesOf(at("FR"))).toEqual(["Select your country"]);
     expect(pathsOf(at(""))).toEqual(["shipping.country"]);
     expect(pathsOf(at(undefined))).toEqual(["shipping.country"]);
     expect(pathsOf(at("us"))).toEqual(["shipping.country"]);
@@ -232,6 +239,7 @@ describe("placeOrderSchema", () => {
     expect(pathsOf(at("4242424242424241"))).toEqual(["payment.cardNumber"]);
     expect(pathsOf(at("424242424242424"))).toEqual(["payment.cardNumber"]);
     expect(pathsOf(at("42424242424242424"))).toEqual(["payment.cardNumber"]);
+    expect(pathsOf(at("42424242424242426"))).toEqual(["payment.cardNumber"]);
     expect(pathsOf(at("4242-4242-4242-4242"))).toEqual(["payment.cardNumber"]);
     expect(pathsOf(at("4242424242424a42"))).toEqual(["payment.cardNumber"]);
     expect(pathsOf(at("4242 4242 4242 4242"))).toBeNull();
@@ -322,6 +330,7 @@ describe("placeOrderSchema", () => {
       ];
     });
     expect(pathsOf(body)).toEqual(["lines"]);
+    expect(messagesOf(body)).toEqual(["Duplicate products"]);
   });
 
   it("[BR-K2] accepts several distinct lines", () => {
@@ -386,5 +395,17 @@ describe("validationFieldPaths", () => {
     expect(result.success ? [] : validationFieldPaths(result.error)).toEqual([
       "lines",
     ]);
+  });
+
+  it("[BR-K2] keeps first occurrence order for repeated paths", () => {
+    const issue = (path: (string | number)[]) =>
+      ({ code: "custom", message: "x", path }) as const;
+    const error = new z.ZodError([
+      issue(["a"]),
+      issue(["b", 0, "c"]),
+      issue(["a"]),
+      issue(["b", 0, "c"]),
+    ]);
+    expect(validationFieldPaths(error)).toEqual(["a", "b.0.c"]);
   });
 });
