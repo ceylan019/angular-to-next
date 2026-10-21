@@ -1,7 +1,6 @@
-import { z } from "zod";
-import type { CartLine } from "./cart-cookie";
+import { MAX_PER_LINE, type CartLine } from "./cart-cookie";
 
-export const MAX_PER_LINE = 10;
+export { MAX_PER_LINE };
 
 type Outcome<Kind extends string> = {
   lines: CartLine[];
@@ -13,13 +12,11 @@ export function lineCap(stock: number): number {
   return Math.max(0, Math.min(MAX_PER_LINE, stock));
 }
 
-const requestedQuantitySchema = z.number().int().min(1);
-
 export function normalizeRequestedQuantity(input: unknown): number {
-  const parsed = requestedQuantitySchema.safeParse(
-    typeof input === "string" ? Number(input) : input,
-  );
-  return parsed.success ? parsed.data : 1;
+  const value = typeof input === "string" ? Number(input) : input;
+  return typeof value === "number" && Number.isInteger(value) && value >= 1
+    ? value
+    : 1;
 }
 
 export function cartCount(lines: CartLine[]): number {
@@ -64,6 +61,9 @@ export function setLineQuantity(
   stock: number,
 ): Outcome<"updated"> {
   const cap = lineCap(stock);
+  if (!lines.some((line) => line.productId === productId)) {
+    return { lines, outcome: "updated", cap };
+  }
   if (cap === 0) {
     return { lines: removeLine(lines, productId), outcome: "clamped", cap };
   }

@@ -13,7 +13,7 @@ export function SiteHeader({ cartCount }: { cartCount: number }) {
           </Link>
           <Link
             href="/cart"
-            className="rounded-full bg-primary px-4 py-1.5 font-medium text-primary-foreground hover:bg-primary/80"
+            className="rounded-full bg-primary px-4 py-1.5 font-medium text-primary-foreground hover:bg-[color-mix(in_oklch,var(--primary),black_20%)]"
           >
             {`Cart (${String(cartCount)})`}
           </Link>
