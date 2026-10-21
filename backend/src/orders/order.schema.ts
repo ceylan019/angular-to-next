@@ -58,8 +58,8 @@ const matches = (pattern: RegExp, message: string): Rule => [
 
 const email = field(
   "Enter your email address",
-  matches(EMAIL, "Enter a valid email address"),
   maxLength(254, "Enter a valid email address"),
+  matches(EMAIL, "Enter a valid email address"),
 );
 
 const optionalLine = z
@@ -128,7 +128,10 @@ export function placeOrderSchema(now: Date): z.ZodType<PlaceOrderBody> {
         "Enter your postal code",
         matches(POSTAL_CODE, "Enter a valid postal code"),
       ),
-      country: z.enum(COUNTRIES, "Select your country"),
+      country: z
+        .string("Select your country")
+        .trim()
+        .pipe(z.enum(COUNTRIES, "Select your country")),
     }),
     payment: z.object({
       cardNumber,
