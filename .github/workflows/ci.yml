@@ -151,7 +151,7 @@ jobs:
 
   traceability:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -163,14 +163,27 @@ jobs:
       - run: pnpm --filter scripts lint
       - run: pnpm --filter scripts typecheck
       - run: pnpm --filter scripts test
-      - run: pnpm --filter scripts mutation
       - run: pnpm traceability
       - run: git diff --exit-code docs/traceability.md
+
+  scripts-mutation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter scripts mutation
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mutation-scripts
           path: scripts/reports/mutation
+          if-no-files-found: ignore
 
   lighthouse:
     runs-on: ubuntu-24.04
