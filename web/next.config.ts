@@ -4,6 +4,7 @@ import { parseEnv } from "./src/lib/parse-env";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  poweredByHeader: false,
   outputFileTracingRoot: path.join(import.meta.dirname, ".."),
   turbopack: {
     rules: {
@@ -16,6 +17,17 @@ const nextConfig: NextConfig = {
   images: {
     localPatterns: [{ pathname: "/images/**" }],
   },
+  headers: () =>
+    Promise.resolve([
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+        ],
+      },
+    ]),
   rewrites: () => {
     const { BACKEND_URL } = parseEnv(process.env);
     return Promise.resolve([
