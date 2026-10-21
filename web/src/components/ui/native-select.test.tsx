@@ -1,8 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { NativeSelect, NativeSelectOption } from "./native-select";
+
+vi.mock("lucide-react", () => {
+  throw new Error("lucide-react ships its icons as client components");
+});
 
 function PlainSelect(props: ComponentProps<"select">) {
   return <select {...props} />;
@@ -32,6 +36,16 @@ describe("NativeSelect", () => {
     expect(
       screen.getAllByRole("option").map((option) => option.textContent),
     ).toEqual(["Name: A to Z", "Price: low to high"]);
+  });
+
+  it("draws the chevron as a decorative icon", () => {
+    const { container } = render(<NativeSelect aria-label="Country" />);
+
+    expect(
+      container.querySelector('[data-slot="native-select-icon"]')?.outerHTML,
+    ).toBe(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground select-none" aria-hidden="true" data-slot="native-select-icon"><path d="m6 9 6 6 6-6"></path></svg>',
+    );
   });
 
   it("disables the select", () => {
