@@ -101,6 +101,8 @@ LEGACY_URL=http://localhost:4100 WEB_URL=http://localhost:3100 BACKEND_URL=http:
 pnpm e2e
 ```
 
+The new app reads its `/images` rewrite at build time, so its images follow the `BACKEND_URL` build arg of the web image, and a `BACKEND_URL` set only at run time moves its API calls but not its images.
+
 ## Interview demo
 
 Install Chromium for the suite beforehand, as shown in [How to run](#how-to-run).
