@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { metadata as rootMetadata } from "./layout";
 import NotFound, { metadata } from "./not-found";
 
 describe("not found page", () => {
@@ -18,6 +19,11 @@ describe("not found page", () => {
 
   it("[BR-B9] has its own title and keeps the default description", () => {
     expect(metadata).toEqual({ title: "Page not found | Wick & Co. Candles" });
+    expect({ ...rootMetadata, ...metadata }).toEqual({
+      title: "Page not found | Wick & Co. Candles",
+      description:
+        "Hand poured candles in floral, woody, fresh, gourmand and spicy scents.",
+    });
   });
 
   it("[BR-B7] offers one way back and no cart messages", () => {
