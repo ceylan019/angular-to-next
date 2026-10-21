@@ -629,7 +629,7 @@ describe("updateQuantity", () => {
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("[BR-C3] rethrows a backend contract error without touching the cookie", async () => {
+  it("rethrows a backend contract error without touching the cookie", async () => {
     const failure = new BackendContractError("bad shape");
     vi.mocked(getProduct).mockRejectedValue(failure);
     existingCart([lavenderLine]);
@@ -638,7 +638,7 @@ describe("updateQuantity", () => {
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("[BR-C3] rethrows unexpected errors", async () => {
+  it("rethrows unexpected errors", async () => {
     const failure = new TypeError("boom");
     vi.mocked(getProduct).mockRejectedValue(failure);
     existingCart([lavenderLine]);
@@ -664,7 +664,7 @@ describe("updateQuantity", () => {
     ["a null input", null],
     ["a text input", "7"],
   ])(
-    "[BR-C3] refuses %s without reading the cart or calling the backend",
+    "refuses %s without reading the cart or calling the backend",
     async (_case, input) => {
       existingCart([lavenderLine]);
 
@@ -728,7 +728,7 @@ describe("removeFromCart", () => {
     ["nothing", undefined],
     ["null", null],
   ])(
-    "[BR-C3] refuses %s as a product id and leaves the cookie alone",
+    "refuses %s as a product id and leaves the cookie alone",
     async (_case, productId) => {
       existingCart([lavenderLine]);
 

@@ -211,7 +211,7 @@ const capped: CartActionState = {
 };
 
 describe("CartQuantityProvider", () => {
-  it("[BR-C2] starts idle with one empty status region", () => {
+  it("starts idle with one empty status region", () => {
     renderQuantityRegion(quantityResults());
 
     expect(screen.getAllByRole("status")).toHaveLength(1);
@@ -278,6 +278,36 @@ describe("CartQuantityProvider", () => {
         screen.getByText("You can buy at most 10 of Lavender Dusk."),
       ).not.toBe(first);
     });
+  });
+
+  it("hands out one commit function across renders and results", async () => {
+    const seen: ((change: QuantityChange) => void)[] = [];
+    function Probe() {
+      seen.push(useCartQuantityAction());
+      useCartActionState();
+      return null;
+    }
+    const action = quantityResults(capped);
+    const tree = (
+      <CartQuantityProvider action={action}>
+        <Probe />
+        <SendChange label="Set 15" change={{ productId: 7, quantity: "15" }} />
+      </CartQuantityProvider>
+    );
+    const { rerender } = render(tree);
+
+    rerender(
+      <CartQuantityProvider action={action}>
+        <Probe />
+        <SendChange label="Set 15" change={{ productId: 7, quantity: "15" }} />
+      </CartQuantityProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Set 15" }));
+    await vi.waitFor(() => {
+      expect(seen.length).toBeGreaterThanOrEqual(3);
+    });
+
+    expect(new Set(seen).size).toBe(1);
   });
 
   it("refuses quantity changes outside a quantity provider", () => {

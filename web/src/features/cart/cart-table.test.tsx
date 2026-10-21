@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
@@ -320,7 +320,7 @@ describe("CartTable", () => {
     expect(remove.closest("form")).not.toBeNull();
   });
 
-  it("[BR-C3] hydrates without a mismatch and then accepts changes", async () => {
+  it("hydrates without a mismatch and then accepts changes", async () => {
     const consoleError = vi.spyOn(console, "error");
     const recoverable = vi.fn();
     const action = answering({ status: "updated", submittedQuantity: "3" });
@@ -347,6 +347,71 @@ describe("CartTable", () => {
     });
     expect(recoverable).not.toHaveBeenCalled();
     expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("[BR-C2] keeps what was typed while an earlier change is on its way and sends it next", async () => {
+    const answers: ((state: CartActionState) => void)[] = [];
+    const action = vi.fn<QuantityAction>(
+      () =>
+        new Promise((resolve) => {
+          answers.push(resolve);
+        }),
+    );
+    render(ui([lavenderRow], action));
+    const input = quantityFor("Lavender Dusk");
+
+    type(input, "5");
+    commit(input);
+    await vi.waitFor(() => {
+      expect(action).toHaveBeenCalledTimes(1);
+    });
+    expect(input).toHaveValue(5);
+    type(input, "7");
+    await act(async () => {
+      answers[0]?.({ status: "updated", submittedQuantity: "5" });
+      await Promise.resolve();
+    });
+
+    expect(input).toHaveValue(7);
+
+    commit(input);
+    await vi.waitFor(() => {
+      expect(action).toHaveBeenCalledTimes(2);
+    });
+    expect(action.mock.calls).toEqual([
+      [{ productId: 7, quantity: "5" }],
+      [{ productId: 7, quantity: "7" }],
+    ]);
+    await act(async () => {
+      answers[1]?.({ status: "updated", submittedQuantity: "7" });
+      await Promise.resolve();
+    });
+  });
+
+  it("keeps one change listener on the input while it re-renders", async () => {
+    const added = vi.spyOn(HTMLInputElement.prototype, "addEventListener");
+    const removed = vi.spyOn(HTMLInputElement.prototype, "removeEventListener");
+    const action = answering({ status: "updated", submittedQuantity: "4" });
+    const { rerender } = render(ui([lavenderRow], action));
+    const input = quantityFor("Lavender Dusk");
+
+    type(input, "3");
+    type(input, "4");
+    rerender(ui([{ ...lavenderRow }], action));
+    commit(input);
+    await vi.waitFor(() => {
+      expect(action).toHaveBeenCalledTimes(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const onInput = (calls: unknown[][], contexts: unknown[]) =>
+      calls.filter(
+        ([type], index) => type === "change" && contexts[index] === input,
+      ).length;
+    expect(onInput(added.mock.calls, added.mock.contexts)).toBe(1);
+    expect(onInput(removed.mock.calls, removed.mock.contexts)).toBe(0);
   });
 
   it("stops listening for changes once the row is gone", () => {

@@ -5,6 +5,7 @@ import {
   startTransition,
   use,
   useActionState,
+  useCallback,
   useState,
   type ReactNode,
 } from "react";
@@ -65,11 +66,14 @@ export function CartQuantityProvider({
     (_state: CartActionState, change: QuantityChange) => action(change),
     IDLE,
   );
-  const commit = (change: QuantityChange) => {
-    startTransition(() => {
-      dispatch(change);
-    });
-  };
+  const commit = useCallback(
+    (change: QuantityChange) => {
+      startTransition(() => {
+        dispatch(change);
+      });
+    },
+    [dispatch],
+  );
   return (
     <StatusContext value={state}>
       <QuantityActionContext value={commit}>{children}</QuantityActionContext>

@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useId, useState } from "react";
+import { startTransition, useCallback, useId, useState } from "react";
 import { useCartQuantityAction } from "@/components/status-region";
 import { Input } from "@/components/ui/input";
 import { useHydrated } from "@/components/use-hydrated";
@@ -20,18 +20,21 @@ export function CartQuantityInput({
   const hydrated = useHydrated();
   const commit = useCartQuantityAction();
   const [draft, setDraft] = useState<string | null>(null);
-  const commitOnChange = (input: HTMLInputElement) => {
-    const send = () => {
-      startTransition(() => {
-        setDraft(null);
-        commit({ productId, quantity: input.value });
-      });
-    };
-    input.addEventListener("change", send);
-    return () => {
-      input.removeEventListener("change", send);
-    };
-  };
+  const commitOnChange = useCallback(
+    (input: HTMLInputElement) => {
+      const send = () => {
+        startTransition(() => {
+          setDraft(null);
+          commit({ productId, quantity: input.value });
+        });
+      };
+      input.addEventListener("change", send);
+      return () => {
+        input.removeEventListener("change", send);
+      };
+    },
+    [commit, productId],
+  );
   return (
     <>
       <label htmlFor={inputId} className="sr-only">
