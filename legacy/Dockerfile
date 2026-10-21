@@ -12,6 +12,12 @@ ENV CHROME_BIN=/usr/bin/chromium
 COPY . .
 CMD ["npm", "run", "test:ci"]
 
+FROM test AS mutation
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends procps \
+  && rm -rf /var/lib/apt/lists/*
+CMD ["npx", "stryker", "run"]
+
 FROM deps AS build
 COPY . .
 RUN npm run build:ssr
