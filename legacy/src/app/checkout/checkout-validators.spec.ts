@@ -472,6 +472,7 @@ const LUHN_CASES: [string, boolean][] = [
   ['', false],
   ['42424242424242a2', false],
   ['4242 4242 4242 4242', false],
+  ['0 4242424242424242', false],
 ];
 
 const EXPIRY_REJECTS = ['1/40', '13/40', '00/40', '12/4', '12-40', ' 12/40'];

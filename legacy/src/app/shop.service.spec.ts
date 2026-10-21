@@ -165,6 +165,16 @@ describe('ShopService', () => {
     );
   });
 
+  it('[BR-C2] treats quantities that are neither numbers nor strings as 1', () => {
+    [[3], true, {}].forEach((invalid) => {
+      const service = fresh();
+
+      service.addToCart(product('lavender'), invalid);
+
+      expect(service.cart[0].quantity).toBe(1);
+    });
+  });
+
   it('[BR-C2] accepts numeric strings as quantities', () => {
     const service = create();
 
@@ -210,6 +220,18 @@ describe('ShopService', () => {
 
     expect(result).toEqual({ clamped: false, cap: 3 });
     expect(service.cart[0].quantity).toBe(3);
+  });
+
+  it('[BR-C2] [BR-C3] update keeps a line capped at a stock of 1', () => {
+    const service = create();
+    service.addToCart(product('last-light'), 1);
+
+    const result = service.updateQuantity(11, 4);
+
+    expect(result).toEqual({ clamped: true, cap: 1 });
+    expect(service.cart.map((l) => [l.product.id, l.quantity])).toEqual([
+      [11, 1],
+    ]);
   });
 
   it('[BR-C3] update of an unknown product changes nothing', () => {
@@ -446,6 +468,34 @@ describe('ShopService', () => {
     ]);
   });
 
+  it('keeps a stored line for a product that costs nothing', () => {
+    localStorage.setItem(
+      'cart',
+      JSON.stringify([
+        { product: product('lavender', { priceCents: 0 }), quantity: 1 },
+      ]),
+    );
+
+    const service = create();
+
+    expect(service.cart.map((l) => [l.product.slug, l.quantity])).toEqual([
+      ['lavender', 1],
+    ]);
+  });
+
+  it('keeps a stored line whose quantity equals the product stock', () => {
+    localStorage.setItem(
+      'cart',
+      JSON.stringify([{ product: product('ember-clove'), quantity: 3 }]),
+    );
+
+    const service = create();
+
+    expect(service.cart.map((l) => [l.product.slug, l.quantity])).toEqual([
+      ['ember-clove', 3],
+    ]);
+  });
+
   it('survives a storage that throws', () => {
     const service = create();
     spyOn(Storage.prototype, 'setItem').and.throwError('quota');
@@ -556,6 +606,17 @@ describe('ShopService', () => {
     expect(
       JSON.parse(localStorage.getItem('cart')!)[1].product.priceCents,
     ).toBe(2600);
+  });
+
+  it('[BR-K4] ignores available stock for products that are not in the cart', () => {
+    const service = create();
+    service.addToCart(product('lavender'), 2);
+
+    service.applyStockLimits([{ productId: 999, available: 3 }]);
+
+    expect(
+      service.cart.map((l) => [l.product.id, l.quantity, l.product.stock]),
+    ).toEqual([[1, 2, 25]]);
   });
 
   it('[BR-K4] keeps quantities already within available stock', () => {

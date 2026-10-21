@@ -3,7 +3,7 @@ import { By, Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { RouterLinkWithHref } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, NEVER, Observable, of } from 'rxjs';
 
 import { ProductListComponent } from './product-list.component';
 import { ShopService } from '../shop.service';
@@ -47,12 +47,14 @@ describe('ProductListComponent', () => {
   let title: Title;
   let meta: Meta;
 
-  function setup(query: any = {}, response: any = page()): void {
+  function setup(
+    query: any = {},
+    response: any = page(),
+    products: Observable<any> = of(response),
+  ): void {
     params = new BehaviorSubject(convertToParamMap(query));
     shop = {
-      getProducts: jasmine
-        .createSpy('getProducts')
-        .and.returnValue(of(response)),
+      getProducts: jasmine.createSpy('getProducts').and.returnValue(products),
       addToCart: jasmine
         .createSpy('addToCart')
         .and.returnValue({ clamped: false, cap: 10 }),
@@ -389,6 +391,16 @@ describe('ProductListComponent', () => {
     );
   });
 
+  it('[BR-B4] two pages show pagination', () => {
+    setup({}, page({ totalItems: 13, totalPages: 2 }));
+
+    const nav = el().querySelector('nav[aria-label="Pagination"]');
+    expect(nav).not.toBeNull();
+    expect(
+      Array.from(nav!.querySelectorAll('a')).map((a) => a.textContent!.trim()),
+    ).toEqual(['1', '2', 'Next']);
+  });
+
   it('[BR-B4] a single page shows no pagination', () => {
     setup({}, page({ items: makeProducts(5), totalItems: 5, totalPages: 1 }));
 
@@ -420,6 +432,15 @@ describe('ProductListComponent', () => {
     expect(el().textContent).not.toContain('This page is empty.');
     expect(el().querySelector('ul[aria-label="Products"]')).toBeNull();
     expect(el().querySelector('nav[aria-label="Pagination"]')).toBeNull();
+  });
+
+  it('[BR-B1] shows no grid, messages or pagination while products load', () => {
+    setup({}, page(), NEVER);
+
+    expect(el().querySelector('ul[aria-label="Products"]')).toBeNull();
+    expect(el().querySelector('nav[aria-label="Pagination"]')).toBeNull();
+    expect(el().textContent).not.toContain('This page is empty.');
+    expect(el().textContent).not.toContain('No candles match these filters');
   });
 
   it('[BR-B5] the empty messages are hidden while products show', () => {

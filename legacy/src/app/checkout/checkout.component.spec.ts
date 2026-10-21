@@ -595,6 +595,17 @@ describe('CheckoutComponent', () => {
     expect('line2' in body.shipping).toBe(false);
   }));
 
+  it('[BR-K2] omits line 2 when the field is never touched', fakeAsync(() => {
+    setup();
+    Object.keys(VALID)
+      .filter((label) => label !== 'Address line 2 (optional)')
+      .forEach((label) => type(label, VALID[label]));
+    submit();
+    const body = pending().request.body;
+    expect(body).toEqual(VALID_BODY);
+    expect('line2' in body.shipping).toBe(false);
+  }));
+
   it('[BR-K2] posts line 2 when it is given', fakeAsync(() => {
     setup();
     fill({ 'Address line 2 (optional)': '  Flat 3  ' });

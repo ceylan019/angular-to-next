@@ -271,6 +271,17 @@ describe('CartComponent', () => {
     expect(status()).toBe('You can buy at most 4 of Last Light.');
   });
 
+  it('[BR-C2] puts the cap back in the input of a line already at the cap', () => {
+    setup([
+      { product: product(), quantity: 2 },
+      { product: CEDAR, quantity: 10 },
+    ]);
+    change('Cedar Smoke', '15');
+    expect(qty('Cedar Smoke').value).toBe('10');
+    expect(qty('Lavender Dusk').value).toBe('2');
+    expect(status()).toBe('You can buy at most 10 of Cedar Smoke.');
+  });
+
   it('[BR-C2] accepts exactly the cap without a message', () => {
     setup([{ product: product(), quantity: 1 }]);
     change('Lavender Dusk', '10');
