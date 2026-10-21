@@ -40,7 +40,7 @@ export function createApp(deps: AppDeps): express.Express {
   app.use("/api", api);
   app.use(
     (
-      error: { status?: number },
+      error: { status?: number; stack?: string },
       _req: express.Request,
       res: express.Response,
       _next: express.NextFunction,
@@ -53,6 +53,7 @@ export function createApp(deps: AppDeps): express.Express {
         res.status(413).json({ error: "PAYLOAD_TOO_LARGE" });
         return;
       }
+      console.error(error.stack ?? error);
       res.status(500).json({ error: "INTERNAL" });
     },
   );
