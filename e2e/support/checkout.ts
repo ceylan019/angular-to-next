@@ -1,4 +1,6 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { addFromDetail } from "./cart.js";
+import { bySlug } from "./catalog.js";
 import { COPY } from "./copy.js";
 
 export const VALID_DETAILS = {
@@ -42,4 +44,31 @@ export async function fillCheckout(
 
 export async function placeOrder(page: Page): Promise<void> {
   await page.getByRole("button", { name: COPY.checkout.placeOrder }).click();
+}
+
+export function orderSummary(page: Page) {
+  return page.getByRole("complementary", { name: COPY.checkout.summary });
+}
+
+export function summaryLine(page: Page, name: string, quantity: number) {
+  return orderSummary(page)
+    .getByRole("listitem")
+    .filter({ hasText: COPY.checkout.summaryLine(name, quantity) });
+}
+
+export async function openCheckout(
+  page: Page,
+  slug: string,
+  quantity: number,
+): Promise<void> {
+  const product = bySlug(slug);
+  await addFromDetail(page, slug, quantity);
+  await page.goto("/checkout");
+  await expect(
+    page.getByRole("heading", { level: 1, name: COPY.checkout.heading }),
+  ).toBeVisible();
+  await expect(summaryLine(page, product.name, quantity)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: COPY.checkout.placeOrder }),
+  ).toBeEnabled();
 }

@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { bySlug } from "../../support/catalog.js";
 import { addFromDetail, addFromList, cartBadge } from "../../support/cart.js";
 import { COPY } from "../../support/copy.js";
+import { expectEmptyCart } from "../../support/expectations.js";
 import { expect, test } from "../../support/fixtures.js";
 import { byTarget } from "../../support/known-differences.js";
 import { usd } from "../../support/money.js";
@@ -21,17 +22,6 @@ function quantityInput(page: Page, name: string) {
 async function expectBadge(page: Page, count: number): Promise<void> {
   await expect(cartBadge(page)).toHaveAccessibleName(COPY.header.cart(count));
   await expect(cartBadge(page)).toHaveAttribute("href", "/cart");
-}
-
-async function expectEmptyCart(page: Page): Promise<void> {
-  await expect(page.getByText(COPY.cart.empty)).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: COPY.cart.continueShopping }),
-  ).toHaveAttribute("href", "/");
-  await expect(page.getByRole("table")).toHaveCount(0);
-  await expect(
-    page.getByRole("link", { name: COPY.cart.checkout, exact: true }),
-  ).toHaveCount(0);
 }
 
 test.describe("cart @cart", () => {

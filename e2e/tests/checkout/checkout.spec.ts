@@ -1,9 +1,17 @@
 import type { Page } from "@playwright/test";
-import { addFromDetail, cartBadge } from "../../support/cart.js";
+import { cartBadge } from "../../support/cart.js";
 import { bySlug } from "../../support/catalog.js";
-import { fillCheckout, placeOrder } from "../../support/checkout.js";
+import {
+  fillCheckout,
+  openCheckout,
+  orderSummary,
+  placeOrder,
+  summaryLine,
+  VALID_DETAILS,
+} from "../../support/checkout.js";
 import { COPY } from "../../support/copy.js";
 import { orderCount, productStock, setProduct } from "../../support/backend.js";
+import { expectEmptyCart, expectNotFound } from "../../support/expectations.js";
 import { expect, test } from "../../support/fixtures.js";
 import { byTarget } from "../../support/known-differences.js";
 import { usd } from "../../support/money.js";
@@ -11,35 +19,8 @@ import { usd } from "../../support/money.js";
 const ORDER_URL = /\/order\/WC-[A-Z0-9]{6}$/;
 const EMAIL = COPY.checkout.labels.email;
 
-function summary(page: Page) {
-  return page.getByRole("complementary", { name: COPY.checkout.summary });
-}
-
-function summaryLine(page: Page, name: string, quantity: number) {
-  return summary(page)
-    .getByRole("listitem")
-    .filter({ hasText: COPY.checkout.summaryLine(name, quantity) });
-}
-
 function alertWith(page: Page, text: string) {
   return page.getByRole("alert").filter({ hasText: text });
-}
-
-async function openCheckout(
-  page: Page,
-  slug: string,
-  quantity: number,
-): Promise<void> {
-  const product = bySlug(slug);
-  await addFromDetail(page, slug, quantity);
-  await page.goto("/checkout");
-  await expect(
-    page.getByRole("heading", { level: 1, name: COPY.checkout.heading }),
-  ).toBeVisible();
-  await expect(summaryLine(page, product.name, quantity)).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: COPY.checkout.placeOrder }),
-  ).toBeEnabled();
 }
 
 async function expectConfirmation(page: Page): Promise<void> {
@@ -55,25 +36,6 @@ function orderNumberOf(page: Page): string {
     throw new Error(`Not an order URL: ${page.url()}`);
   }
   return match[1];
-}
-
-async function expectNotFound(page: Page): Promise<void> {
-  await expect(
-    page.getByRole("heading", { level: 1, name: COPY.notFound.heading }),
-  ).toBeVisible();
-  await expect(page.getByText(COPY.notFound.text)).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: COPY.notFound.backToShop }),
-  ).toHaveAttribute("href", "/");
-  await expect(page).toHaveTitle(COPY.title.notFound);
-}
-
-async function expectEmptyCart(page: Page): Promise<void> {
-  await expect(page.getByText(COPY.cart.empty)).toBeVisible();
-  await expect(page.getByRole("table")).toHaveCount(0);
-  await expect(
-    page.getByRole("link", { name: COPY.cart.checkout, exact: true }),
-  ).toHaveCount(0);
 }
 
 test.describe("checkout @checkout", () => {
@@ -110,12 +72,12 @@ test.describe("checkout @checkout", () => {
     await expect(summaryLine(page, product.name, 2)).toContainText(
       usd(product.priceCents * 2),
     );
-    await expect(summary(page).getByRole("term")).toHaveText([
+    await expect(orderSummary(page).getByRole("term")).toHaveText([
       COPY.totals.subtotal,
       COPY.totals.shipping,
       COPY.totals.total,
     ]);
-    await expect(summary(page).getByRole("definition")).toHaveText([
+    await expect(orderSummary(page).getByRole("definition")).toHaveText([
       usd(product.priceCents * 2),
       "$5.95",
       usd(product.priceCents * 2 + 595),
@@ -167,7 +129,7 @@ test.describe("checkout @checkout", () => {
       page.getByText(COPY.checkout.errors.emailRequired, { exact: true }),
     ).toHaveCount(0);
 
-    await email.fill("ada@example.com");
+    await email.fill(VALID_DETAILS.email);
 
     await expect(
       page.getByText(COPY.checkout.errors.emailInvalid, { exact: true }),
@@ -187,23 +149,6 @@ test.describe("checkout @checkout", () => {
     await expect(page.getByText("Zoë Ångström", { exact: true })).toBeVisible();
   });
 
-  test("[BR-K2] accepts an optional second address line left empty", async ({
-    page,
-  }) => {
-    await openCheckout(page, "lavender-dusk", 1);
-
-    await fillCheckout(page);
-    await placeOrder(page);
-
-    await expectConfirmation(page);
-    await expect(
-      page.getByRole("heading", {
-        level: 2,
-        name: COPY.confirmation.shippingTo,
-      }),
-    ).toBeVisible();
-  });
-
   test("[BR-K3] a declined card keeps the cart and the entered values", async ({
     page,
   }) => {
@@ -216,7 +161,7 @@ test.describe("checkout @checkout", () => {
     await expect(page).toHaveURL(/\/checkout$/);
     await expect(cartBadge(page)).toHaveAccessibleName(COPY.header.cart(1));
     await expect(page.getByLabel(EMAIL, { exact: true })).toHaveValue(
-      "ada@example.com",
+      VALID_DETAILS.email,
     );
     await expect(
       page.getByLabel(COPY.checkout.labels.cardNumber, { exact: true }),
@@ -240,7 +185,7 @@ test.describe("checkout @checkout", () => {
     await expect(summaryLine(page, product.name, 1)).toBeVisible();
     await expect(page).toHaveURL(/\/checkout$/);
     await expect(page.getByLabel(EMAIL, { exact: true })).toHaveValue(
-      "ada@example.com",
+      VALID_DETAILS.email,
     );
     await expect(cartBadge(page)).toHaveAccessibleName(COPY.header.cart(1));
 
@@ -281,7 +226,7 @@ test.describe("checkout @checkout", () => {
 
     await expect(alertWith(page, COPY.checkout.priceChanged)).toBeVisible();
     await expect(summaryLine(page, product.name, 1)).toContainText(usd(1900));
-    await expect(summary(page).getByRole("definition")).toHaveText([
+    await expect(orderSummary(page).getByRole("definition")).toHaveText([
       usd(1900),
       usd(595),
       usd(2495),
@@ -338,9 +283,9 @@ test.describe("checkout @checkout", () => {
       }),
     ).toBeVisible();
     for (const line of [
-      "Ada Lovelace",
-      "12 Analytical Way",
-      COPY.confirmation.cityLine("London", "SW1A 1AA"),
+      VALID_DETAILS.fullName,
+      VALID_DETAILS.line1,
+      COPY.confirmation.cityLine(VALID_DETAILS.city, VALID_DETAILS.postalCode),
       COPY.checkout.countries.GB,
     ]) {
       await expect(page.getByText(line, { exact: true })).toBeVisible();

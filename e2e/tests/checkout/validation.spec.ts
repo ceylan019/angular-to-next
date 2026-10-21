@@ -1,5 +1,8 @@
-import { addFromDetail } from "../../support/cart.js";
-import { fillCheckout, placeOrder } from "../../support/checkout.js";
+import {
+  fillCheckout,
+  openCheckout,
+  placeOrder,
+} from "../../support/checkout.js";
 import type { CheckoutDetails } from "../../support/checkout.js";
 import { COPY } from "../../support/copy.js";
 import { orderCount } from "../../support/backend.js";
@@ -71,16 +74,7 @@ const ROWS: readonly Row[] = [
 test.describe("checkout validation @checkout", () => {
   for (const row of ROWS) {
     test(`[BR-K2] ${row.title} is rejected`, async ({ page }) => {
-      await addFromDetail(page, "lavender-dusk", 1);
-      await page.goto("/checkout");
-      await expect(
-        page.getByRole("button", { name: COPY.checkout.placeOrder }),
-      ).toBeEnabled();
-      await expect(
-        page
-          .getByRole("complementary", { name: COPY.checkout.summary })
-          .getByRole("listitem"),
-      ).toHaveCount(1);
+      await openCheckout(page, "lavender-dusk", 1);
 
       await fillCheckout(page, { [row.field]: row.value });
       await placeOrder(page);

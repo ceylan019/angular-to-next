@@ -1,22 +1,11 @@
-import type { Page } from "@playwright/test";
 import { bySlug } from "../../support/catalog.js";
 import { COPY } from "../../support/copy.js";
+import { expectNotFound } from "../../support/expectations.js";
 import { expect, test } from "../../support/fixtures.js";
 import { byTarget } from "../../support/known-differences.js";
 import { usd } from "../../support/money.js";
 
 const CAP = 10;
-
-async function expectNotFound(page: Page): Promise<void> {
-  await expect(
-    page.getByRole("heading", { level: 1, name: COPY.notFound.heading }),
-  ).toBeVisible();
-  await expect(page.getByText(COPY.notFound.text)).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: COPY.notFound.backToShop }),
-  ).toHaveAttribute("href", "/");
-  await expect(page).toHaveTitle(COPY.title.notFound);
-}
 
 test.describe("product detail @browse", () => {
   test("[BR-B6] product page shows details and the quantity picker", async ({
