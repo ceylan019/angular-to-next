@@ -22,7 +22,7 @@ describe("SiteHeader", () => {
     );
   });
 
-  it("[KD-04] shows the real count, including zero and large totals", () => {
+  it("[BR-C4] shows the real count, including zero and large totals", () => {
     const { rerender } = render(<SiteHeader cartCount={0} />);
     expect(screen.getByRole("link", { name: "Cart (0)" })).toBeInTheDocument();
 

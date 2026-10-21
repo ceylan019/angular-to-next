@@ -40,7 +40,7 @@ describe("cart store", () => {
     await expect(readCart()).resolves.toEqual([]);
   });
 
-  it("[BR-C4] writes the cart as an http only lax cookie for 30 days", async () => {
+  it("[BR-C6] writes the cart as an http only lax cookie for 30 days", async () => {
     await writeCart([line]);
 
     expect(set).toHaveBeenCalledTimes(1);
@@ -52,7 +52,7 @@ describe("cart store", () => {
     });
   });
 
-  it("[BR-C4] writes an empty cart as an empty list", async () => {
+  it("[BR-C6] writes an empty cart as an empty list", async () => {
     await writeCart([]);
 
     expect(set).toHaveBeenCalledWith("cart", "[]", expect.any(Object));

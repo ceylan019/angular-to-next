@@ -66,6 +66,14 @@ describe("normalizeRequestedQuantity", () => {
     expect(normalizeRequestedQuantity("250")).toBe(250);
   });
 
+  it.each([["1e21"], ["9007199254740993"], ["99999999999999999999"]])(
+    "[BR-C2] keeps the huge whole number %s",
+    (v) => {
+      expect(normalizeRequestedQuantity(v)).toBeGreaterThan(1e15);
+      expect(normalizeRequestedQuantity(Number(v))).toBe(Number(v));
+    },
+  );
+
   it("[BR-C2] turns anything else into 1", () => {
     for (const v of [
       0,
@@ -219,6 +227,17 @@ describe("addLine", () => {
     }
   });
 
+  it.each([["1e21"], ["9007199254740993"], ["99999999999999999999"]])(
+    "[BR-C2] clamps the huge quantity %s to the cap",
+    (huge) => {
+      const result = addLine([], lavender, Number(huge));
+
+      expect(result.outcome).toBe("clamped");
+      expect(result.cap).toBe(10);
+      expect(result.lines[0]?.quantity).toBe(10);
+    },
+  );
+
   it("[BR-C2] never creates a line for a product without stock", () => {
     const fresh = addLine([], { ...lavender, stock: 0 }, 1);
     expect(fresh.lines).toEqual([]);
@@ -279,6 +298,31 @@ describe("setLineQuantity", () => {
     expect(result.outcome).toBe("clamped");
     expect(result.cap).toBe(4);
     expect(result.lines[0]?.quantity).toBe(4);
+  });
+
+  it.each([["1e21"], ["9007199254740993"], ["99999999999999999999"]])(
+    "[BR-C2] [BR-C3] clamps the huge quantity %s to the cap",
+    (huge) => {
+      const result = setLineQuantity([line()], 7, Number(huge), 25);
+
+      expect(result.outcome).toBe("clamped");
+      expect(result.cap).toBe(10);
+      expect(result.lines[0]?.quantity).toBe(10);
+    },
+  );
+
+  it("[BR-C3] leaves the lines unchanged and updated for an absent product", () => {
+    const lines = [line()];
+
+    for (const [requested, stock] of [
+      [5, 25],
+      [15, 25],
+      [9, 4],
+    ] as const) {
+      const result = setLineQuantity(lines, 99, requested, stock);
+      expect(result.lines).toEqual(lines);
+      expect(result.outcome).toBe("updated");
+    }
   });
 
   it("[BR-C3] treats non integers as 1", () => {

@@ -194,7 +194,7 @@ describe("addToCart", () => {
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("[BR-B8] refuses missing or malformed slugs without calling the backend", async () => {
+  it("[BR-C1] refuses missing or malformed slugs without calling the backend", async () => {
     const bad: FormData[] = [
       form({}),
       form({ quantity: "2" }),
@@ -217,7 +217,7 @@ describe("addToCart", () => {
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("[BR-B8] returns an error and keeps the cookie when the backend is unavailable", async () => {
+  it("[BR-C1] returns an error and keeps the cookie when the backend is unavailable", async () => {
     vi.mocked(getProduct).mockRejectedValue(
       new BackendUnavailableError("down"),
     );
@@ -228,7 +228,7 @@ describe("addToCart", () => {
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("[BR-B8] rethrows a backend contract error without touching the cookie", async () => {
+  it("[BR-C1] rethrows a backend contract error without touching the cookie", async () => {
     const failure = new BackendContractError("bad shape");
     vi.mocked(getProduct).mockRejectedValue(failure);
 
@@ -238,7 +238,7 @@ describe("addToCart", () => {
     expect(set).not.toHaveBeenCalled();
   });
 
-  it("[BR-B8] rethrows unexpected errors", async () => {
+  it("[BR-C1] rethrows unexpected errors", async () => {
     const failure = new TypeError("boom");
     vi.mocked(getProduct).mockRejectedValue(failure);
 
@@ -247,6 +247,29 @@ describe("addToCart", () => {
     );
     expect(set).not.toHaveBeenCalled();
   });
+
+  it.each([["1e21"], ["9007199254740993"], ["99999999999999999999"]])(
+    "[BR-C2] clamps the huge quantity %s to the cap with the cap message",
+    async (quantity) => {
+      const result = await addToCart(
+        idle,
+        form({ slug: "lavender-dusk", quantity }),
+      );
+
+      expect(result).toEqual({
+        status: "clamped",
+        message: "You can buy at most 10 of Lavender Dusk.",
+      });
+      expect(writtenCart()).toEqual([
+        {
+          productId: 7,
+          slug: "lavender-dusk",
+          quantity: 10,
+          unitPriceCents: 1615,
+        },
+      ]);
+    },
+  );
 
   it("[BR-C1] ignores the previous state", async () => {
     const result = await addToCart(
