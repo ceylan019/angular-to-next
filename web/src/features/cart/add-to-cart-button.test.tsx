@@ -14,7 +14,12 @@ function ui(action: Action, stock = 5) {
   return (
     <StatusRegionProvider action={action}>
       <StatusRegion />
-      <AddToCartButton slug="lavender-dusk" disabled={stock === 0} />
+      <h2 id="lavender-heading">Lavender Dusk</h2>
+      <AddToCartButton
+        slug="lavender-dusk"
+        disabled={stock === 0}
+        describedBy="lavender-heading"
+      />
     </StatusRegionProvider>
   );
 }
@@ -81,5 +86,13 @@ describe("AddToCartButton", () => {
     container.innerHTML = renderToString(ui(vi.fn<Action>(), 0));
 
     expect(container.querySelector("button")?.disabled).toBe(true);
+  });
+
+  it("[BR-C1] is described by the element it is given and keeps the name Add to cart", () => {
+    render(ui(vi.fn<Action>()));
+
+    const button = screen.getByRole("button", { name: "Add to cart" });
+    expect(button).toHaveAttribute("aria-describedby", "lavender-heading");
+    expect(button).toHaveAccessibleDescription("Lavender Dusk");
   });
 });

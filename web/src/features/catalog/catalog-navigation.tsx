@@ -12,6 +12,7 @@ import { catalogHref, type CatalogQuery } from "./catalog-query";
 
 type CatalogNavigationValue = {
   query: CatalogQuery;
+  pending: boolean;
   navigate: (next: CatalogQuery) => void;
 };
 
@@ -28,7 +29,7 @@ export function CatalogNavigation({
 }) {
   const router = useRouter();
   const [shown, setShown] = useOptimistic(query);
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
 
   function navigate(next: CatalogQuery): void {
     startTransition(() => {
@@ -38,7 +39,7 @@ export function CatalogNavigation({
   }
 
   return (
-    <CatalogNavigationContext value={{ query: shown, navigate }}>
+    <CatalogNavigationContext value={{ query: shown, pending, navigate }}>
       {children}
     </CatalogNavigationContext>
   );
@@ -50,4 +51,19 @@ export function useCatalogNavigation(): CatalogNavigationValue {
     throw new Error("Catalog controls need a CatalogNavigation above them");
   }
   return value;
+}
+
+export function CatalogResults({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
+  const { pending } = useCatalogNavigation();
+  return (
+    <div aria-busy={pending} className={className}>
+      {children}
+    </div>
+  );
 }

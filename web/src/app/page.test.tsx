@@ -31,8 +31,15 @@ function products(count: number): ProductSummary[] {
   }));
 }
 
+function pageProps(searchParams: SearchParams = {}) {
+  return {
+    params: Promise.resolve({}),
+    searchParams: Promise.resolve(searchParams),
+  };
+}
+
 async function renderPage(searchParams: SearchParams = {}) {
-  render(await HomePage({ searchParams: Promise.resolve(searchParams) }));
+  render(await HomePage(pageProps(searchParams)));
 }
 
 function requestedQuery(): string {
@@ -71,6 +78,7 @@ describe("product list page", () => {
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
     const list = screen.getByRole("list", { name: "Products" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(1);
+    expect(list.closest("[aria-busy]")).toHaveAttribute("aria-busy", "false");
     expect(
       within(list).getByRole("link", { name: "Lavender Dusk" }),
     ).toHaveAttribute("href", "/products/lavender-dusk");
@@ -168,8 +176,8 @@ describe("product list page", () => {
     await renderPage({ family: "herbal", sort: "price-asc" });
 
     expect(
-      screen.getByText("No candles match these filters"),
-    ).toBeInTheDocument();
+      screen.getByText("No candles match these filters").closest("[aria-busy]"),
+    ).toHaveAttribute("aria-busy", "false");
     expect(screen.getByRole("link", { name: "Clear filters" })).toHaveAttribute(
       "href",
       "/",
@@ -224,17 +232,13 @@ describe("product list page", () => {
     const outage = new BackendUnavailableError("Backend request failed");
     vi.mocked(getProducts).mockRejectedValue(outage);
 
-    await expect(HomePage({ searchParams: Promise.resolve({}) })).rejects.toBe(
-      outage,
-    );
+    await expect(HomePage(pageProps())).rejects.toBe(outage);
   });
 
   it("a contract violation from the backend also reaches the error page", async () => {
     const broken = new BackendContractError("Backend body does not match");
     vi.mocked(getProducts).mockRejectedValue(broken);
 
-    await expect(
-      HomePage({ searchParams: Promise.resolve({ page: "2" }) }),
-    ).rejects.toBe(broken);
+    await expect(HomePage(pageProps({ page: "2" }))).rejects.toBe(broken);
   });
 });

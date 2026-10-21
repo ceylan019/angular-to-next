@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { useHydrated } from "@/components/use-hydrated";
 import {
   NativeSelect,
@@ -10,14 +11,15 @@ import { SORT_OPTIONS, toSortKey, withSort } from "./catalog-query";
 
 export function SortSelect() {
   const hydrated = useHydrated();
+  const id = useId();
   const { query, navigate } = useCatalogNavigation();
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor="sort" className="text-sm font-semibold text-ink">
+      <label htmlFor={id} className="text-sm font-semibold text-ink">
         Sort by
       </label>
       <NativeSelect
-        id="sort"
+        id={id}
         value={query.sort}
         disabled={!hydrated}
         onChange={(event) => {

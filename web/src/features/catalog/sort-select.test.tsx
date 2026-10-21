@@ -99,7 +99,23 @@ describe("SortSelect", () => {
     expect(select()).toHaveValue("price-asc");
   });
 
+  it("[BR-B3] two sort selects on one page each have their own label", () => {
+    render(
+      <>
+        {ui(query())}
+        {ui(query({ sort: "price-desc" }))}
+      </>,
+    );
+
+    const selects = screen.getAllByRole("combobox", { name: "Sort by" });
+    expect(selects).toHaveLength(2);
+    expect(selects[0]).toHaveValue("name-asc");
+    expect(selects[1]).toHaveValue("price-desc");
+  });
+
   it("[BR-B3] the sort select is disabled in the server HTML and enabled after hydration", async () => {
+    const consoleError = vi.spyOn(console, "error");
+    const recoverable = vi.fn();
     const element = ui(query({ sort: "price-asc" }));
     const container = document.createElement("div");
     container.innerHTML = renderToString(element);
@@ -111,13 +127,19 @@ describe("SortSelect", () => {
     expect(serverSelect).toBeDisabled();
     expect(serverSelect).toHaveValue("price-asc");
 
-    render(element, { container, hydrate: true });
+    render(element, {
+      container,
+      hydrate: true,
+      onRecoverableError: recoverable,
+    });
 
     await vi.waitFor(() => {
       expect(
         within(container).getByRole("combobox", { name: "Sort by" }),
       ).toBeEnabled();
     });
+    expect(recoverable).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
     fireEvent.change(
       within(container).getByRole("combobox", { name: "Sort by" }),
       { target: { value: "price-desc" } },

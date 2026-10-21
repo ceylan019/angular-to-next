@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { StatusRegion, StatusRegionProvider } from "@/components/status-region";
 import { addToCart } from "@/features/cart/cart-actions";
 import { EmptyPage, NoMatches } from "@/features/catalog/catalog-empty";
-import { CatalogNavigation } from "@/features/catalog/catalog-navigation";
+import {
+  CatalogNavigation,
+  CatalogResults,
+} from "@/features/catalog/catalog-navigation";
 import {
   parseCatalogQuery,
   toApiSearchParams,
@@ -21,8 +24,6 @@ export const metadata: Metadata = {
   description:
     "Hand poured candles in floral, woody, fresh, gourmand and spicy scents.",
 };
-
-type SearchParams = Record<string, string | string[] | undefined>;
 
 function Results({
   query,
@@ -43,11 +44,7 @@ function Results({
   );
 }
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function HomePage({ searchParams }: PageProps<"/">) {
   const query = parseCatalogQuery(await searchParams);
   const result = await getProducts(toApiSearchParams(query));
   return (
@@ -58,17 +55,17 @@ export default async function HomePage({
         </h1>
         <StatusRegion />
       </div>
-      <div className="mt-4 grid gap-8 md:grid-cols-[13rem_1fr] lg:grid-cols-[14rem_1fr]">
-        <div className="flex flex-col gap-8">
-          <CatalogNavigation query={query}>
+      <CatalogNavigation query={query}>
+        <div className="mt-4 grid gap-8 md:grid-cols-[13rem_1fr] lg:grid-cols-[14rem_1fr]">
+          <div className="flex flex-col gap-8">
             <FamilyFilter />
             <SortSelect />
-          </CatalogNavigation>
+          </div>
+          <CatalogResults className="flex flex-col gap-8 transition-opacity aria-busy:opacity-60">
+            <Results query={query} result={result} />
+          </CatalogResults>
         </div>
-        <div className="flex flex-col gap-8">
-          <Results query={query} result={result} />
-        </div>
-      </div>
+      </CatalogNavigation>
     </StatusRegionProvider>
   );
 }

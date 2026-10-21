@@ -137,7 +137,35 @@ describe("FamilyFilter", () => {
     expect(checkbox("Herbal")).toBeChecked();
   });
 
+  it("[BR-B2] two filters on one page each label their own checkboxes", () => {
+    render(
+      <>
+        {ui(query())}
+        {ui(query({ families: ["woody"] }))}
+      </>,
+    );
+
+    const groups = screen.getAllByRole("group", { name: "Scent family" });
+    expect(groups).toHaveLength(2);
+    for (const group of groups) {
+      for (const label of LABELS) {
+        expect(
+          within(group).getByRole("checkbox", { name: label }),
+        ).toBeInTheDocument();
+      }
+    }
+    const [first, second] = groups as [HTMLElement, HTMLElement];
+    expect(
+      within(first).getByRole("checkbox", { name: "Woody" }),
+    ).not.toBeChecked();
+    expect(
+      within(second).getByRole("checkbox", { name: "Woody" }),
+    ).toBeChecked();
+  });
+
   it("[BR-B2] the checkboxes are disabled in the server HTML and enabled after hydration", async () => {
+    const consoleError = vi.spyOn(console, "error");
+    const recoverable = vi.fn();
     const element = ui(query({ families: ["woody"] }));
     const container = document.createElement("div");
     container.innerHTML = renderToString(element);
@@ -150,13 +178,19 @@ describe("FamilyFilter", () => {
       within(container).getByRole("checkbox", { name: "Woody" }),
     ).toBeChecked();
 
-    render(element, { container, hydrate: true });
+    render(element, {
+      container,
+      hydrate: true,
+      onRecoverableError: recoverable,
+    });
 
     await vi.waitFor(() => {
       for (const box of within(container).getAllByRole("checkbox")) {
         expect(box).toBeEnabled();
       }
     });
+    expect(recoverable).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
     fireEvent.click(within(container).getByRole("checkbox", { name: "Spicy" }));
     expect(push).toHaveBeenCalledWith("/?family=woody&family=spicy");
   });

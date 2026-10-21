@@ -42,6 +42,24 @@ function renderGrid(products: ProductSummary[]) {
   );
 }
 
+function candles(count: number, prefix: string): ProductSummary[] {
+  return Array.from({ length: count }, (_, index) => ({
+    ...lavender,
+    id: index + 1,
+    slug: `${prefix}-${String(index + 1)}`,
+    name: `${prefix} ${String(index + 1)}`,
+    imageUrl: `/images/${prefix}-${String(index + 1)}.jpg`,
+  }));
+}
+
+function preloaded(image: HTMLElement): boolean {
+  return Array.from(
+    document.head.querySelectorAll('link[rel="preload"][as="image"]'),
+  ).some(
+    (link) => link.getAttribute("imagesrcset") === image.getAttribute("srcset"),
+  );
+}
+
 function card(name: string) {
   const heading = screen.getByRole("heading", { level: 2, name });
   const item = heading.closest("li");
@@ -138,5 +156,39 @@ describe("ProductGrid", () => {
       ),
     ).toHaveLength(12);
     expect(screen.getAllByRole("status")).toHaveLength(1);
+  });
+
+  it("[BR-B1] preloads the first row of three images and lazy loads the rest", () => {
+    renderGrid(candles(5, "row"));
+
+    const images = screen.getAllByRole("img");
+    expect(images).toHaveLength(5);
+    for (const image of images.slice(0, 3)) {
+      expect(image).not.toHaveAttribute("loading", "lazy");
+      expect(preloaded(image)).toBe(true);
+    }
+    for (const image of images.slice(3)) {
+      expect(image).toHaveAttribute("loading", "lazy");
+      expect(preloaded(image)).toBe(false);
+    }
+  });
+
+  it("[BR-B1] preloads every image of a grid shorter than one row", () => {
+    renderGrid(candles(2, "short"));
+
+    for (const image of screen.getAllByRole("img")) {
+      expect(image).not.toHaveAttribute("loading", "lazy");
+      expect(preloaded(image)).toBe(true);
+    }
+  });
+
+  it("[BR-B1] each Add to cart button is described by its card heading and keeps its name", () => {
+    renderGrid([emberClove, lavender, soldOut]);
+
+    for (const name of ["Ember Clove", "Lavender Dusk", "Fig & Cassis"]) {
+      const button = card(name).getByRole("button", { name: "Add to cart" });
+      expect(button).toHaveAccessibleName("Add to cart");
+      expect(button).toHaveAccessibleDescription(name);
+    }
   });
 });
