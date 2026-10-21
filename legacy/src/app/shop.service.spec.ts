@@ -45,6 +45,11 @@ describe('ShopService', () => {
     return TestBed.inject(ShopService);
   }
 
+  function fresh(): ShopService {
+    localStorage.clear();
+    return create();
+  }
+
   function count(service: ShopService): number {
     let value = -1;
     service.cartCount$.subscribe((n) => (value = n)).unsubscribe();
@@ -150,7 +155,7 @@ describe('ShopService', () => {
   it('[BR-C2] treats invalid requested quantities as 1', () => {
     [0, -2, 2.5, 'abc', undefined, null, NaN, Infinity, '', ' '].forEach(
       (invalid) => {
-        const service = create();
+        const service = fresh();
 
         const result = service.addToCart(product('lavender'), invalid);
 
@@ -276,8 +281,17 @@ describe('ShopService', () => {
 
     service.addToCart(product('fig-cassis'), 1);
     expect(service.getSubtotal()).toBe(16.14);
-    service.updateQuantity(8, 3);
-    expect(service.getSubtotal()).toBe(48.44);
+    service.updateQuantity(8, 2);
+    expect(service.getSubtotal()).toBe(32.29);
+    service.updateQuantity(8, 4);
+    expect(service.getSubtotal()).toBe(64.59);
+  });
+
+  it('[BR-C5] [KD-01] the formula does not truncate every quantity of the $16.15 candle', () => {
+    const service = create();
+    service.addToCart(product('fig-cassis'), 3);
+
+    expect(service.getSubtotal()).toBe(48.45);
   });
 
   it('[BR-C5] subtotal of an empty cart is 0', () => {
@@ -303,19 +317,19 @@ describe('ShopService', () => {
   });
 
   it('[BR-C5] charges shipping below and not above $50.00', () => {
-    const below = create();
+    const below = fresh();
     below.addToCart(product('cedar'), 1);
     below.addToCart(product('honey'), 1);
     expect(below.getShipping()).toBe(5.95);
 
-    const above = create();
+    const above = fresh();
     above.addToCart(product('cedar'), 1);
     above.addToCart(product('rose'), 1);
     expect(above.getShipping()).toBe(0);
     expect(above.getTotal()).toBe(50.25);
 
-    expect(create().getShipping()).toBe(0);
-    expect(create().getTotal()).toBe(0);
+    expect(fresh().getShipping()).toBe(0);
+    expect(fresh().getTotal()).toBe(0);
   });
 
   it('[BR-C6] persists the cart and restores it in a new instance', () => {
