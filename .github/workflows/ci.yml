@@ -113,8 +113,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [legacy]
+        target: [legacy, next]
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        include:
+          - target: legacy
+            services: db backend legacy
+          - target: next
+            services: db backend web
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -126,7 +131,7 @@ jobs:
       - run: pnpm --filter e2e lint
       - run: pnpm --filter e2e typecheck
       - run: pnpm --filter e2e exec playwright install --with-deps chromium
-      - run: TEST_MODE=true docker compose up --build --wait db backend legacy
+      - run: TEST_MODE=true docker compose up --build --wait ${{ matrix.services }}
       - run: pnpm --filter e2e exec playwright test --project=${{ matrix.target }}
       - if: failure()
         run: docker compose logs
