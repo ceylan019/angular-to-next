@@ -13,6 +13,7 @@ export async function createTestApp(overrides: Partial<Config> = {}) {
   return Promise.resolve({
     app,
     db,
+    config,
     close: async () => {
       await pool.end();
     },

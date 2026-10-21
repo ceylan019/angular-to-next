@@ -1,6 +1,15 @@
 import { count } from "drizzle-orm";
 import request from "supertest";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+import { createApp } from "../src/app.js";
 import { runMigrations } from "../src/db/migrate.js";
 import { orders } from "../src/db/schema.js";
 import { resetDatabase } from "../src/db/seed.js";
@@ -419,5 +428,29 @@ describe("orders api", () => {
     expect(calls).toBe(5);
     expect((await product("lavender-dusk")).stock).toBe(stockBefore);
     expect(await orderCount()).toBe(1);
+  });
+
+  it("answers 500 INTERNAL and logs the error when a dependency throws", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const app = createApp({
+        db: testApp.db,
+        config: testApp.config,
+        clock: () => {
+          throw new Error("clock exploded");
+        },
+      });
+      const res = await request(app)
+        .post("/api/orders")
+        .send(body([await line("lavender-dusk", 1)]));
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ error: "INTERNAL" });
+      expect(res.text).not.toContain("clock exploded");
+      expect(logged).toHaveBeenCalledTimes(1);
+      const [first] = logged.mock.calls[0] ?? [];
+      expect(String(first)).toContain("clock exploded");
+    } finally {
+      logged.mockRestore();
+    }
   });
 });
