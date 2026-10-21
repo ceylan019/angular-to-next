@@ -1,7 +1,5 @@
-"use client";
-
-import { useCartFormAction } from "@/components/status-region";
 import { Button } from "@/components/ui/button";
+import { AddToCartForm } from "./add-to-cart-form";
 
 export function AddToCartButton({
   slug,
@@ -12,10 +10,8 @@ export function AddToCartButton({
   disabled: boolean;
   describedBy: string;
 }) {
-  const formAction = useCartFormAction();
   return (
-    <form action={formAction}>
-      <input type="hidden" name="slug" value={slug} />
+    <AddToCartForm slug={slug}>
       <Button
         type="submit"
         disabled={disabled}
@@ -25,6 +21,6 @@ export function AddToCartButton({
       >
         Add to cart
       </Button>
-    </form>
+    </AddToCartForm>
   );
 }
