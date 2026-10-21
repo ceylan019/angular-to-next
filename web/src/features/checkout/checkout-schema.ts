@@ -22,6 +22,8 @@ export type CheckoutValues = {
   cvc: string;
 };
 
+export type CheckoutInput = Omit<CheckoutValues, "line2"> & { line2?: string };
+
 type Rule = readonly [(value: string) => boolean, string];
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,7 +68,9 @@ const isCurrent = (now: Date) => (value: string) => {
   return parsed !== null && !isExpired(parsed, now);
 };
 
-export function buildCheckoutSchema(now: Date): z.ZodType<CheckoutValues> {
+export function buildCheckoutSchema(
+  now: Date,
+): z.ZodType<CheckoutValues, CheckoutInput> {
   return z.object({
     email: field(
       "Enter your email address",
@@ -81,7 +85,11 @@ export function buildCheckoutSchema(now: Date): z.ZodType<CheckoutValues> {
       "Enter your address",
       maxLength(200, "Use 200 characters or fewer"),
     ),
-    line2: z.string().trim().max(200, "Use 200 characters or fewer"),
+    line2: z
+      .string()
+      .trim()
+      .max(200, "Use 200 characters or fewer")
+      .default(""),
     city: field(
       "Enter your city",
       maxLength(100, "Use 100 characters or fewer"),
