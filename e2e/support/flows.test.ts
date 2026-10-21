@@ -13,16 +13,12 @@ function matching(grep: RegExp): string[] {
 }
 
 describe("flowGrep", () => {
-  it("enables the shell, browse and cart flows for the next project", () => {
-    expect(ENABLED_NEXT_FLOWS).toEqual(["shell", "browse", "cart"]);
+  it("enables the shell, browse, cart and checkout flows for the next project", () => {
+    expect(ENABLED_NEXT_FLOWS).toEqual(["shell", "browse", "cart", "checkout"]);
   });
 
-  it("runs the shell, browse and cart tests on next and leaves checkout out", () => {
-    expect(matching(flowGrep(ENABLED_NEXT_FLOWS))).toEqual([
-      TITLES[0],
-      TITLES[1],
-      TITLES[2],
-    ]);
+  it("runs every shared test on next, checkout included", () => {
+    expect(matching(flowGrep(ENABLED_NEXT_FLOWS))).toEqual(TITLES);
   });
 
   it("matches no test at all when no flow is enabled", () => {
