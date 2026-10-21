@@ -447,8 +447,7 @@ describe("orders api", () => {
       expect(res.body).toEqual({ error: "INTERNAL" });
       expect(res.text).not.toContain("clock exploded");
       expect(logged).toHaveBeenCalledTimes(1);
-      const [first] = logged.mock.calls[0] ?? [];
-      expect(String(first)).toContain("clock exploded");
+      expect(String(logged.mock.calls[0]?.[0])).toContain("clock exploded");
     } finally {
       logged.mockRestore();
     }
