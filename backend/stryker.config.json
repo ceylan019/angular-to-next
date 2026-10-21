@@ -1,12 +1,23 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
-  "testRunner": "vitest",
-  "vitest": { "configFile": "vitest.unit.config.ts" },
-  "mutate": [],
-  "thresholds": { "high": 95, "low": 90, "break": 90 },
+  "testRunner": "command",
+  "mutate": ["src/catalog/catalog-query.ts"],
+  "thresholds": {
+    "high": 95,
+    "low": 90,
+    "break": 90
+  },
   "reporters": ["html", "json", "clear-text"],
   "incremental": true,
   "incrementalFile": "reports/stryker-incremental.json",
-  "htmlReporter": { "fileName": "reports/mutation/index.html" },
-  "jsonReporter": { "fileName": "reports/mutation/mutation.json" }
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "commandRunner": {
+    "command": "pnpm exec vitest run --config vitest.unit.config.ts src/catalog"
+  },
+  "coverageAnalysis": "off"
 }
