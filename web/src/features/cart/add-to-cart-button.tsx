@@ -20,7 +20,8 @@ export function AddToCartButton({
         type="submit"
         disabled={disabled}
         aria-describedby={describedBy}
-        className="h-9 w-full focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
+        focus="outline"
+        className="h-9 w-full"
       >
         Add to cart
       </Button>

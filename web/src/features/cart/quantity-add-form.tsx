@@ -1,13 +1,18 @@
 "use client";
 
 import { useId } from "react";
-import { useCartFormAction } from "@/components/status-region";
+import {
+  useCartActionState,
+  useCartFormAction,
+} from "@/components/status-region";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function QuantityAddForm({ slug, cap }: { slug: string; cap: number }) {
   const formAction = useCartFormAction();
+  const state = useCartActionState();
   const quantityId = useId();
+  const typed = state.status === "idle" ? null : state.submittedQuantity;
   const soldOut = cap === 0;
   return (
     <form
@@ -27,7 +32,7 @@ export function QuantityAddForm({ slug, cap }: { slug: string; cap: number }) {
           inputMode="numeric"
           min={1}
           max={cap}
-          defaultValue={1}
+          defaultValue={typed ?? "1"}
           disabled={soldOut}
           className="h-9 w-24 bg-surface text-ink"
         />
@@ -35,7 +40,8 @@ export function QuantityAddForm({ slug, cap }: { slug: string; cap: number }) {
       <Button
         type="submit"
         disabled={soldOut}
-        className="h-9 px-6 focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
+        focus="outline"
+        className="h-9 px-6"
       >
         Add to cart
       </Button>

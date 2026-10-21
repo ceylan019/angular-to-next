@@ -42,6 +42,8 @@ jobs:
   web:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      BACKEND_URL: http://backend.test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -50,9 +52,6 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter web typegen
-        env:
-          BACKEND_URL: http://backend.test
       - run: pnpm --filter web lint
       - run: pnpm --filter web typecheck
       - run: pnpm --filter web test --coverage

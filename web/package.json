@@ -6,9 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "typegen": "next typegen",
-    "typecheck": "tsc --noEmit",
+    "lint": "next typegen && eslint .",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "mutation": "stryker run"
   },

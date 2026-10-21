@@ -4,12 +4,11 @@ import { lineCap } from "@/features/cart/cart-rules";
 import { QuantityAddForm } from "@/features/cart/quantity-add-form";
 import type { ProductDetail } from "@/lib/backend/schemas";
 import { formatUsd } from "@/lib/money";
+import { PRODUCT_IMAGE_SIDE } from "./product-card";
 import { stockStatus } from "./stock-status";
 
 export const PRODUCT_DETAIL_IMAGE_SIZES =
   "(min-width: 1152px) 536px, (min-width: 768px) 50vw, 100vw";
-
-const IMAGE_SIDE = 1200;
 
 export function ProductDetails({ product }: { product: ProductDetail }) {
   return (
@@ -17,8 +16,8 @@ export function ProductDetails({ product }: { product: ProductDetail }) {
       <Image
         src={product.imageUrl}
         alt={product.name}
-        width={IMAGE_SIDE}
-        height={IMAGE_SIDE}
+        width={PRODUCT_IMAGE_SIDE}
+        height={PRODUCT_IMAGE_SIDE}
         sizes={PRODUCT_DETAIL_IMAGE_SIZES}
         preload
         className="aspect-square w-full rounded-xl bg-border object-cover shadow-sm ring-1 ring-border"

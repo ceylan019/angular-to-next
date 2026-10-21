@@ -48,6 +48,10 @@ export function useCartFormAction(): (formData: FormData) => void {
   return useStatusContext().formAction;
 }
 
+export function useCartActionState(): CartActionState {
+  return useStatusContext().state;
+}
+
 export function StatusRegion() {
   const { state } = useStatusContext();
   const [shown, setShown] = useState(state);

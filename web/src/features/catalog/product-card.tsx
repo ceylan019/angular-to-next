@@ -9,7 +9,7 @@ import { stockStatus } from "./stock-status";
 export const PRODUCT_IMAGE_SIZES =
   "(min-width: 1024px) 272px, (min-width: 640px) 50vw, 100vw";
 
-const IMAGE_SIDE = 1200;
+export const PRODUCT_IMAGE_SIDE = 1200;
 
 export function ProductCard({
   product,
@@ -24,8 +24,8 @@ export function ProductCard({
       <Image
         src={product.imageUrl}
         alt={product.name}
-        width={IMAGE_SIDE}
-        height={IMAGE_SIDE}
+        width={PRODUCT_IMAGE_SIDE}
+        height={PRODUCT_IMAGE_SIDE}
         sizes={PRODUCT_IMAGE_SIZES}
         preload={preload}
         className="aspect-square w-full bg-border object-cover"

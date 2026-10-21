@@ -15,10 +15,7 @@ export default function NotFound() {
       <p className="text-lg text-muted-foreground">
         {"We couldn't find that page."}
       </p>
-      <Button
-        asChild
-        className="h-9 px-4 focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
-      >
+      <Button asChild focus="outline" className="h-9 px-4">
         <Link href="/">Back to shop</Link>
       </Button>
     </div>
