@@ -8,7 +8,13 @@ export async function createTestApp(overrides: Partial<Config> = {}) {
     ...loadConfig({ DATABASE_URL: inject("databaseUrl") }),
     ...overrides,
   };
-  const { db } = createDb(config.databaseUrl);
+  const { db, pool } = createDb(config.databaseUrl);
   const app = createApp({ db, config });
-  return Promise.resolve({ app, db });
+  return Promise.resolve({
+    app,
+    db,
+    close: async () => {
+      await pool.end();
+    },
+  });
 }
