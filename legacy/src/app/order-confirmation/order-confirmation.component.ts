@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 
-import { COUNTRIES } from '../checkout/checkout-validators';
+import { COUNTRIES } from '../models';
 import { ShopService } from '../shop.service';
 
 @Component({

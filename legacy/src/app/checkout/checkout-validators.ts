@@ -6,6 +6,8 @@ import {
   Validator,
 } from '@angular/forms';
 
+import { COUNTRIES } from '../models';
+
 export type CheckoutField =
   | 'email'
   | 'fullName'
@@ -17,14 +19,6 @@ export type CheckoutField =
   | 'cardNumber'
   | 'expiry'
   | 'cvc';
-
-export const COUNTRIES = [
-  { code: 'US', name: 'United States' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'NL', name: 'Netherlands' },
-];
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const POSTAL_CODE_PATTERN = /^[A-Za-z0-9 ]{3,10}$/;

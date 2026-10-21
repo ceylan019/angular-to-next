@@ -4,13 +4,13 @@ import { FormControl } from '@angular/forms';
 import {
   CheckoutField,
   CheckoutFieldValidatorDirective,
-  COUNTRIES,
   checkoutFieldError,
   isExpired,
   isLuhnValid,
   normalizeCardNumber,
   parseExpiry,
 } from './checkout-validators';
+import { COUNTRIES } from '../models';
 
 const NOW = new Date('2026-10-21T12:00:00Z');
 

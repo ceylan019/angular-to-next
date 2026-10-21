@@ -4,9 +4,8 @@ import { NgForm, NgModel } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 
-import { CartItem } from '../models';
+import { CartItem, COUNTRIES } from '../models';
 import { ShopService } from '../shop.service';
-import { COUNTRIES } from './checkout-validators';
 
 @Component({
   selector: 'app-checkout',
@@ -51,6 +50,9 @@ export class CheckoutComponent implements OnInit {
   }
 
   calcShipping(subtotal: number): number {
+    if (this.items.length === 0) {
+      return 0;
+    }
     return subtotal > 50 ? 0 : 5.95;
   }
 
