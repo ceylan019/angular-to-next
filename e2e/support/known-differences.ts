@@ -21,6 +21,10 @@ export const KNOWN_DIFFERENCES = {
     title: "Place order stays enabled while the order is submitted",
     rules: ["BR-K6"],
   },
+  "KD-06": {
+    title: "Legacy cart caps edits by the stock seen when the item was added",
+    rules: ["BR-C2"],
+  },
 } as const;
 
 export type KnownDifferenceId = keyof typeof KNOWN_DIFFERENCES;

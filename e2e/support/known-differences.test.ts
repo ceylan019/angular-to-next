@@ -7,7 +7,7 @@ function info(name: string, annotations: TestInfo["annotations"] = []) {
 }
 
 describe("KNOWN_DIFFERENCES", () => {
-  it("registers KD-01 to KD-05 with the rules they break", () => {
+  it("registers KD-01 to KD-06 with the rules they break", () => {
     const rules = Object.fromEntries(
       Object.entries(KNOWN_DIFFERENCES).map(([id, kd]) => [id, kd.rules]),
     );
@@ -18,13 +18,14 @@ describe("KNOWN_DIFFERENCES", () => {
       "KD-03": ["BR-C5"],
       "KD-04": ["BR-C4"],
       "KD-05": ["BR-K6"],
+      "KD-06": ["BR-C2"],
     });
   });
 
   it("gives every known difference a distinct title", () => {
     const titles = Object.values(KNOWN_DIFFERENCES).map((kd) => kd.title);
 
-    expect(new Set(titles).size).toBe(5);
+    expect(new Set(titles).size).toBe(6);
     for (const title of titles) {
       expect(title.length).toBeGreaterThan(10);
     }

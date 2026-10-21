@@ -212,6 +212,32 @@ describe('ShopService', () => {
     expect(service.cart[0].quantity).toBe(3);
   });
 
+  it('[BR-C2] [KD-06] caps an edit by the stock stored at add time without asking the backend', () => {
+    const service = create();
+    service.addToCart(product('lavender'), 2);
+
+    const result = service.updateQuantity(1, '5');
+
+    expect(result).toEqual({ clamped: false, cap: 10 });
+    expect(service.cart[0].quantity).toBe(5);
+    expect(service.cart[0].product.stock).toBe(25);
+    httpMock.expectNone(() => true);
+  });
+
+  it('[BR-C2] [KD-06] a restored line keeps its stored stock as the cap', () => {
+    localStorage.setItem(
+      'cart',
+      JSON.stringify([{ product: product('ember-clove'), quantity: 1 }]),
+    );
+    const service = create();
+
+    const result = service.updateQuantity(9, '5');
+
+    expect(result).toEqual({ clamped: true, cap: 3 });
+    expect(service.cart[0].quantity).toBe(3);
+    httpMock.expectNone(() => true);
+  });
+
   it('[BR-C3] update accepts exactly the cap', () => {
     const service = create();
     service.addToCart(product('ember-clove'), 1);
