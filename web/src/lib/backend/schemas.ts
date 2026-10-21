@@ -124,7 +124,7 @@ export const priceChangedSchema = z.object({
   ),
 });
 
-export type FamilySlug = z.infer<typeof familySlugSchema>;
+export type { FamilySlug } from "./families";
 export type Family = z.infer<typeof familySchema>;
 export type ProductSummary = z.infer<typeof productSummarySchema>;
 export type ProductDetail = z.infer<typeof productDetailSchema>;

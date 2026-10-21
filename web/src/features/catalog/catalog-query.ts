@@ -1,5 +1,5 @@
 import { FAMILY_SLUGS } from "@/lib/backend/families";
-import type { FamilySlug } from "@/lib/backend/schemas";
+import type { FamilySlug } from "@/lib/backend/families";
 
 export type SortKey = "name-asc" | "price-asc" | "price-desc";
 

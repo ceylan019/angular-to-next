@@ -6,3 +6,5 @@ export const FAMILY_SLUGS = [
   "spicy",
   "herbal",
 ] as const;
+
+export type FamilySlug = (typeof FAMILY_SLUGS)[number];
