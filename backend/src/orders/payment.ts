@@ -7,13 +7,14 @@ export function normalizeCardNumber(input: string): string {
 export function isLuhnValid(digits: string): boolean {
   if (!/^\d+$/.test(digits)) return false;
   let sum = 0;
-  let double = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
+  let double = true;
+  for (let i = digits.length - 2; i >= 0; i--) {
     const value = Number(digits[i]);
     sum += double ? (value > 4 ? value * 2 - 9 : value * 2) : value;
     double = !double;
   }
-  return sum % 10 === 0;
+  const checkDigit = (10 - (sum % 10)) % 10;
+  return checkDigit === Number(digits.charAt(digits.length - 1));
 }
 
 export function parseExpiry(

@@ -25,6 +25,8 @@ describe("payment", () => {
     ["18", true],
     ["59", true],
     ["42424242424242426", true],
+    ["4111111111111111", true],
+    ["4111111111111112", false],
   ])("[BR-K3] luhn %s is %s", (n, ok) => {
     expect(isLuhnValid(n)).toBe(ok);
   });
