@@ -29,6 +29,7 @@ describe("AddToCartButton", () => {
     const action = vi.fn<Action>().mockResolvedValue({
       status: "added",
       message: "Added Lavender Dusk to your cart.",
+      submittedQuantity: null,
     });
     render(ui(action));
 
@@ -47,6 +48,7 @@ describe("AddToCartButton", () => {
     const action = vi.fn<Action>().mockResolvedValue({
       status: "added",
       message: "Added Lavender Dusk to your cart.",
+      submittedQuantity: null,
     });
     render(ui(action));
     const button = screen.getByRole("button", { name: "Add to cart" });

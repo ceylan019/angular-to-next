@@ -20,10 +20,31 @@ function ui(action: Action, cap = 10) {
   );
 }
 
+function typedQuantity(formData: FormData): string | null {
+  const typed = formData.get("quantity");
+  return typeof typed === "string" ? typed : null;
+}
+
+function echoing(
+  outcome:
+    { status: "added" | "clamped"; message: string } | { status: "error" },
+): Mock<Action> {
+  return vi.fn<Action>((_state, formData) =>
+    Promise.resolve({ ...outcome, submittedQuantity: typedQuantity(formData) }),
+  );
+}
+
 function added(): Mock<Action> {
-  return vi.fn<Action>().mockResolvedValue({
+  return echoing({
     status: "added",
     message: "Added Lavender Dusk to your cart.",
+  });
+}
+
+function clamped(): Mock<Action> {
+  return echoing({
+    status: "clamped",
+    message: "You can buy at most 10 of Lavender Dusk.",
   });
 }
 
@@ -51,10 +72,7 @@ function serverHtml(element: ReactElement): HTMLElement {
 
 describe("QuantityAddForm", () => {
   it("[BR-C1] submits the chosen quantity", async () => {
-    const action = vi.fn<Action>().mockResolvedValue({
-      status: "added",
-      message: "Added Lavender Dusk to your cart.",
-    });
+    const action = added();
     render(ui(action));
 
     fireEvent.change(quantity(), { target: { value: "3" } });
@@ -80,19 +98,89 @@ describe("QuantityAddForm", () => {
   });
 
   it("[BR-C2] sends a quantity above the cap so the server clamps it and shows why", async () => {
-    const action = vi.fn<Action>().mockResolvedValue({
-      status: "clamped",
-      message: "You can buy at most 10 of Lavender Dusk.",
-    });
+    const action = clamped();
     render(ui(action));
 
     fireEvent.change(quantity(), { target: { value: "12" } });
     fireEvent.click(addButton());
 
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "You can buy at most 10 of Lavender Dusk.",
-    );
+    expect(
+      await screen.findByText("You can buy at most 10 of Lavender Dusk."),
+    ).toBeInTheDocument();
     expect(action.mock.calls[0]?.[1].get("quantity")).toBe("12");
+  });
+
+  it("[BR-C1] keeps the typed quantity after an add", async () => {
+    render(ui(added()));
+
+    fireEvent.change(quantity(), { target: { value: "2" } });
+    fireEvent.click(addButton());
+
+    await screen.findByText("Added Lavender Dusk to your cart.");
+    expect(quantity()).toHaveValue(2);
+  });
+
+  it("[BR-C2] keeps the typed quantity after a clamped add", async () => {
+    render(ui(clamped()));
+
+    fireEvent.change(quantity(), { target: { value: "12" } });
+    fireEvent.click(addButton());
+
+    await screen.findByText("You can buy at most 10 of Lavender Dusk.");
+    expect(quantity()).toHaveValue(12);
+  });
+
+  it("[BR-C2] keeps the latest typed quantity across adds, from added to clamped", async () => {
+    const action = vi.fn<Action>();
+    action.mockImplementationOnce(added());
+    action.mockImplementationOnce(clamped());
+    render(ui(action));
+
+    fireEvent.change(quantity(), { target: { value: "2" } });
+    fireEvent.click(addButton());
+    await screen.findByText("Added Lavender Dusk to your cart.");
+    expect(quantity()).toHaveValue(2);
+
+    fireEvent.change(quantity(), { target: { value: "12" } });
+    fireEvent.click(addButton());
+    await screen.findByText("You can buy at most 10 of Lavender Dusk.");
+
+    expect(quantity()).toHaveValue(12);
+    expect(
+      action.mock.calls.map(([, formData]) => formData.get("quantity")),
+    ).toEqual(["2", "12"]);
+  });
+
+  it("[BR-C1] keeps the typed quantity when an add fails", async () => {
+    const action = vi.fn<Action>();
+    action.mockImplementationOnce(added());
+    action.mockImplementationOnce(echoing({ status: "error" }));
+    render(ui(action));
+
+    fireEvent.click(addButton());
+    await screen.findByText("Added Lavender Dusk to your cart.");
+    fireEvent.change(quantity(), { target: { value: "3" } });
+    fireEvent.click(addButton());
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    });
+    expect(quantity()).toHaveValue(3);
+  });
+
+  it("[BR-C1] falls back to 1 when the server sends no typed quantity", async () => {
+    const action = vi.fn<Action>().mockResolvedValue({
+      status: "added",
+      message: "Added Lavender Dusk to your cart.",
+      submittedQuantity: null,
+    });
+    render(ui(action));
+
+    fireEvent.change(quantity(), { target: { value: "4" } });
+    fireEvent.click(addButton());
+
+    await screen.findByText("Added Lavender Dusk to your cart.");
+    expect(quantity()).toHaveValue(1);
   });
 
   it("[BR-C2] sends an emptied quantity as is, which the server counts as 1", async () => {

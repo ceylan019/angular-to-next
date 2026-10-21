@@ -157,19 +157,24 @@ describe("ProductDetails", () => {
     expect(action).not.toHaveBeenCalled();
   });
 
-  it("[BR-C1] adds the chosen quantity and shows the cart message in the status region", async () => {
+  it("[BR-C1] adds the chosen quantity, shows the cart message and keeps the quantity", async () => {
     const action = vi.fn<Action>().mockResolvedValue({
       status: "added",
       message: "Added Lavender Dusk to your cart.",
+      submittedQuantity: "2",
     });
     renderDetails(lavender, action);
 
     fireEvent.change(quantity(), { target: { value: "2" } });
     fireEvent.click(addButton());
 
-    expect(await screen.findByRole("status")).toHaveTextContent(
+    expect(
+      await screen.findByText("Added Lavender Dusk to your cart."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
       "Added Lavender Dusk to your cart.",
     );
+    expect(quantity()).toHaveValue(2);
     expect(action).toHaveBeenCalledTimes(1);
     const formData = action.mock.calls[0]?.[1];
     expect(formData?.get("slug")).toBe("lavender-dusk");

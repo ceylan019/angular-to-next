@@ -16,7 +16,7 @@ describe("not found page", () => {
     );
   });
 
-  it("[BR-B7] has the not found title and keeps the default description", () => {
+  it("[BR-B9] has its own title and keeps the default description", () => {
     expect(metadata).toEqual({ title: "Page not found | Wick & Co. Candles" });
   });
 

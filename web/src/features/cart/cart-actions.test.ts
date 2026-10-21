@@ -49,6 +49,7 @@ describe("addToCart", () => {
     expect(result).toEqual({
       status: "added",
       message: "Added Lavender Dusk to your cart.",
+      submittedQuantity: "2",
     });
     expect(getProduct).toHaveBeenCalledWith("lavender-dusk");
     expect(set).toHaveBeenCalledTimes(1);
@@ -66,7 +67,11 @@ describe("addToCart", () => {
   it("[BR-C1] adds 1 when no quantity is sent, as the list does", async () => {
     const result = await addToCart(idle, form({ slug: "lavender-dusk" }));
 
-    expect(result.status).toBe("added");
+    expect(result).toEqual({
+      status: "added",
+      message: "Added Lavender Dusk to your cart.",
+      submittedQuantity: null,
+    });
     expect(writtenCart()).toEqual([
       {
         productId: 7,
@@ -134,6 +139,7 @@ describe("addToCart", () => {
     expect(result).toEqual({
       status: "clamped",
       message: "You can buy at most 10 of Lavender Dusk.",
+      submittedQuantity: "12",
     });
     expect(writtenCart()).toEqual([
       {
@@ -164,6 +170,7 @@ describe("addToCart", () => {
     expect(result).toEqual({
       status: "clamped",
       message: "You can buy at most 3 of Lavender Dusk.",
+      submittedQuantity: "1",
     });
     expect(set).toHaveBeenCalledTimes(1);
     expect(writtenCart()).toEqual([
@@ -181,7 +188,7 @@ describe("addToCart", () => {
 
     const result = await addToCart(idle, form({ slug: "no-such-candle" }));
 
-    expect(result).toEqual({ status: "error" });
+    expect(result).toEqual({ status: "error", submittedQuantity: null });
     expect(set).not.toHaveBeenCalled();
   });
 
@@ -190,7 +197,7 @@ describe("addToCart", () => {
 
     const result = await addToCart(idle, form({ slug: "lavender-dusk" }));
 
-    expect(result).toEqual({ status: "error" });
+    expect(result).toEqual({ status: "error", submittedQuantity: null });
     expect(set).not.toHaveBeenCalled();
   });
 
@@ -209,9 +216,9 @@ describe("addToCart", () => {
     ];
 
     for (const data of bad) {
-      await expect(addToCart(idle, data)).resolves.toEqual({
-        status: "error",
-      });
+      const result = await addToCart(idle, data);
+      expect(result.status).toBe("error");
+      expect(result).not.toHaveProperty("message");
     }
     expect(getProduct).not.toHaveBeenCalled();
     expect(set).not.toHaveBeenCalled();
@@ -224,7 +231,7 @@ describe("addToCart", () => {
 
     const result = await addToCart(idle, form({ slug: "lavender-dusk" }));
 
-    expect(result).toEqual({ status: "error" });
+    expect(result).toEqual({ status: "error", submittedQuantity: null });
     expect(set).not.toHaveBeenCalled();
   });
 
@@ -259,6 +266,7 @@ describe("addToCart", () => {
       expect(result).toEqual({
         status: "clamped",
         message: "You can buy at most 10 of Lavender Dusk.",
+        submittedQuantity: quantity,
       });
       expect(writtenCart()).toEqual([
         {
@@ -273,10 +281,104 @@ describe("addToCart", () => {
 
   it("[BR-C1] ignores the previous state", async () => {
     const result = await addToCart(
-      { status: "error" },
+      { status: "error", submittedQuantity: "4" },
       form({ slug: "lavender-dusk" }),
     );
 
     expect(result.status).toBe("added");
+  });
+
+  it("[BR-C1] echoes the quantity exactly as typed, so the detail form can keep it", async () => {
+    const result = await addToCart(
+      idle,
+      form({ slug: "lavender-dusk", quantity: "02" }),
+    );
+
+    expect(result).toEqual({
+      status: "added",
+      message: "Added Lavender Dusk to your cart.",
+      submittedQuantity: "02",
+    });
+    expect(writtenCart()).toEqual([
+      {
+        productId: 7,
+        slug: "lavender-dusk",
+        quantity: 2,
+        unitPriceCents: 1615,
+      },
+    ]);
+  });
+
+  it.each([["0"], ["-5"], ["2.5"], [""]])(
+    "[BR-C2] echoes the invalid quantity %j as typed while adding 1",
+    async (quantity) => {
+      const result = await addToCart(
+        idle,
+        form({ slug: "lavender-dusk", quantity }),
+      );
+
+      expect(result).toEqual({
+        status: "added",
+        message: "Added Lavender Dusk to your cart.",
+        submittedQuantity: quantity,
+      });
+    },
+  );
+
+  it("[BR-C1] echoes no quantity when the field is not text", async () => {
+    const result = await addToCart(
+      idle,
+      form({ slug: "lavender-dusk", quantity: new File(["3"], "3") }),
+    );
+
+    expect(result).toEqual({
+      status: "added",
+      message: "Added Lavender Dusk to your cart.",
+      submittedQuantity: null,
+    });
+    expect(writtenCart()).toEqual([
+      {
+        productId: 7,
+        slug: "lavender-dusk",
+        quantity: 1,
+        unitPriceCents: 1615,
+      },
+    ]);
+  });
+
+  it("[BR-C1] echoes the typed quantity when the slug is refused", async () => {
+    const result = await addToCart(
+      idle,
+      form({ slug: "UPPER", quantity: "4" }),
+    );
+
+    expect(result).toEqual({ status: "error", submittedQuantity: "4" });
+    expect(getProduct).not.toHaveBeenCalled();
+  });
+
+  it("[BR-B8] echoes the typed quantity when the product is unknown or sold out", async () => {
+    vi.mocked(getProduct).mockResolvedValueOnce(null);
+    vi.mocked(getProduct).mockResolvedValueOnce({ ...lavenderDusk, stock: 0 });
+
+    await expect(
+      addToCart(idle, form({ slug: "no-such-candle", quantity: "5" })),
+    ).resolves.toEqual({ status: "error", submittedQuantity: "5" });
+    await expect(
+      addToCart(idle, form({ slug: "lavender-dusk", quantity: "6" })),
+    ).resolves.toEqual({ status: "error", submittedQuantity: "6" });
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("[BR-C1] echoes the typed quantity when the backend is unavailable", async () => {
+    vi.mocked(getProduct).mockRejectedValue(
+      new BackendUnavailableError("down"),
+    );
+
+    const result = await addToCart(
+      idle,
+      form({ slug: "lavender-dusk", quantity: "3" }),
+    );
+
+    expect(result).toEqual({ status: "error", submittedQuantity: "3" });
   });
 });

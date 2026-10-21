@@ -41,6 +41,7 @@ function results(...states: CartActionState[]): Mock<Action> {
 const added: CartActionState = {
   status: "added",
   message: "Added Lavender Dusk to your cart.",
+  submittedQuantity: null,
 };
 
 describe("StatusRegion", () => {
@@ -73,6 +74,7 @@ describe("StatusRegion", () => {
       results({
         status: "clamped",
         message: "You can buy at most 10 of Lavender Dusk.",
+        submittedQuantity: null,
       }),
     );
 
@@ -87,6 +89,7 @@ describe("StatusRegion", () => {
     const action = results(added, {
       status: "added",
       message: "Added Orange Grove to your cart.",
+      submittedQuantity: null,
     });
     renderRegion(action);
 
@@ -106,7 +109,7 @@ describe("StatusRegion", () => {
   });
 
   it("[BR-C1] clears the region when an add fails", async () => {
-    renderRegion(results(added, { status: "error" }));
+    renderRegion(results(added, { status: "error", submittedQuantity: null }));
 
     fireEvent.click(screen.getByRole("button", { name: "Send one" }));
     await screen.findByText("Added Lavender Dusk to your cart.");
@@ -121,6 +124,7 @@ describe("StatusRegion", () => {
     const capped: CartActionState = {
       status: "clamped",
       message: "You can buy at most 10 of Lavender Dusk.",
+      submittedQuantity: null,
     };
     renderRegion(results(capped, { ...capped }));
 
