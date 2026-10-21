@@ -7,12 +7,12 @@ import { createTestApp } from "./support/test-app.js";
 type Product = { id: number; priceCents: number; stock: number };
 
 const order = (productId: number, unitPriceCents: number) => ({
-  contact: { email: "a@b.co" },
+  contact: { email: "ada@example.com" },
   shipping: {
     fullName: "Ada Lovelace",
-    line1: "1 Main St",
-    city: "Austin",
-    postalCode: "78701",
+    line1: "1 Main Street",
+    city: "Springfield",
+    postalCode: "12345",
     country: "US",
   },
   payment: { cardNumber: "4242424242424242", expiry: "12/99", cvc: "123" },
@@ -45,14 +45,16 @@ describe("test mode api", () => {
   };
 
   const placeOne = async () => {
-    const p = await product("lavender");
+    const p = await product("lavender-dusk");
     return request(on.app).post("/api/orders").send(order(p.id, p.priceCents));
   };
 
   it("hides every test route when test mode is off", async () => {
     const calls = [
       request(off.app).post("/api/test/reset"),
-      request(off.app).post("/api/test/products/lavender").send({ stock: 1 }),
+      request(off.app)
+        .post("/api/test/products/lavender-dusk")
+        .send({ stock: 1 }),
       request(off.app).get("/api/test/orders"),
       request(off.app).get("/api/test/request-count"),
       request(off.app).post("/api/test/request-count/reset"),
@@ -66,11 +68,11 @@ describe("test mode api", () => {
 
   it("reset restores stock after an order", async () => {
     expect((await placeOne()).status).toBe(201);
-    expect((await product("lavender")).stock).toBe(23);
+    expect((await product("lavender-dusk")).stock).toBe(23);
     const res = await request(on.app).post("/api/test/reset");
     expect(res.status).toBe(204);
     expect(res.text).toBe("");
-    expect((await product("lavender")).stock).toBe(25);
+    expect((await product("lavender-dusk")).stock).toBe(25);
   });
 
   it("reset also clears the order count and the request count", async () => {
@@ -86,51 +88,50 @@ describe("test mode api", () => {
 
   it("sets stock and price for a product", async () => {
     const res = await request(on.app)
-      .post("/api/test/products/lavender")
+      .post("/api/test/products/lavender-dusk")
       .send({ stock: 1, priceCents: 1900 });
     expect(res.status).toBe(204);
-    const p = await product("lavender");
+    const p = await product("lavender-dusk");
     expect(p.stock).toBe(1);
     expect(p.priceCents).toBe(1900);
   });
 
   it("sets stock alone and leaves the price", async () => {
-    const before = await product("lavender");
+    const before = await product("lavender-dusk");
     const res = await request(on.app)
-      .post("/api/test/products/lavender")
+      .post("/api/test/products/lavender-dusk")
       .send({ stock: 0 });
     expect(res.status).toBe(204);
-    const p = await product("lavender");
+    const p = await product("lavender-dusk");
     expect(p.stock).toBe(0);
     expect(p.priceCents).toBe(before.priceCents);
   });
 
   it("sets price alone and leaves the stock", async () => {
-    const before = await product("lavender");
+    const before = await product("lavender-dusk");
     const res = await request(on.app)
-      .post("/api/test/products/lavender")
+      .post("/api/test/products/lavender-dusk")
       .send({ priceCents: 1234 });
     expect(res.status).toBe(204);
-    const p = await product("lavender");
+    const p = await product("lavender-dusk");
     expect(p.priceCents).toBe(1234);
     expect(p.stock).toBe(before.stock);
   });
 
   it("only changes the named product", async () => {
-    const other = await product("rose");
+    const other = await product("orange-grove");
     await request(on.app)
-      .post("/api/test/products/lavender")
+      .post("/api/test/products/lavender-dusk")
       .send({ stock: 1, priceCents: 1900 });
-    expect(await product("rose")).toEqual(other);
+    expect(await product("orange-grove")).toEqual(other);
   });
 
   it("rejects an empty product patch", async () => {
     const res = await request(on.app)
-      .post("/api/test/products/lavender")
+      .post("/api/test/products/lavender-dusk")
       .send({});
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("VALIDATION");
-    expect(Array.isArray(res.body.fields)).toBe(true);
+    expect(res.body).toEqual({ error: "VALIDATION", fields: [""] });
   });
 
   it.each([
@@ -142,22 +143,22 @@ describe("test mode api", () => {
     [{ priceCents: 10.5 }, "priceCents"],
     [{ priceCents: null }, "priceCents"],
   ])("rejects the product patch %j", async (body, field) => {
-    const before = await product("lavender");
+    const before = await product("lavender-dusk");
     const res = await request(on.app)
-      .post("/api/test/products/lavender")
+      .post("/api/test/products/lavender-dusk")
       .send(body);
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "VALIDATION", fields: [field] });
-    expect(await product("lavender")).toEqual(before);
+    expect(await product("lavender-dusk")).toEqual(before);
   });
 
   it("rejects unknown keys in a product patch", async () => {
     const res = await request(on.app)
-      .post("/api/test/products/lavender")
+      .post("/api/test/products/lavender-dusk")
       .send({ stock: 1, name: "x" });
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("VALIDATION");
-    expect((await product("lavender")).stock).toBe(25);
+    expect(res.body).toEqual({ error: "VALIDATION", fields: [""] });
+    expect((await product("lavender-dusk")).stock).toBe(25);
   });
 
   it("answers 404 for an unknown slug", async () => {

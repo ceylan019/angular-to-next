@@ -6,7 +6,8 @@
     "src/orders/pricing.ts",
     "src/orders/payment.ts",
     "src/orders/order.schema.ts",
-    "src/orders/order-number.ts"
+    "src/orders/order-number.ts",
+    "src/testing/request-counter.ts"
   ],
   "thresholds": {
     "high": 95,
