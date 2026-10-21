@@ -1,0 +1,40 @@
+<app-not-found *ngIf="notFound"></app-not-found>
+<div *ngIf="product">
+  <div role="status" class="text-success mb-3">{{ message }}</div>
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <img class="img-fluid" [src]="product.imageUrl" />
+    </div>
+    <div class="col-md-6">
+      <h1>{{ product.name }}</h1>
+      <p class="lead">{{ product.priceCents / 100 | currency }}</p>
+      <p class="text-muted">{{ stockText(product.stock) }}</p>
+      <p>{{ product.description }}</p>
+      <p class="mb-1">Scent notes: {{ product.scentNotes.join(', ') }}</p>
+      <p class="mb-1">Burn time: {{ product.burnTimeHours }} hours</p>
+      <p>Size: {{ product.sizeOz }} oz</p>
+      <form (ngSubmit)="add(quantity.value)">
+        <div class="form-group">
+          <label for="quantity">Quantity</label>
+          <input
+            #quantity
+            id="quantity"
+            type="number"
+            class="form-control"
+            min="1"
+            [max]="cap"
+            value="1"
+            [disabled]="product.stock === 0"
+          />
+        </div>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="product.stock === 0"
+        >
+          Add to cart
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
