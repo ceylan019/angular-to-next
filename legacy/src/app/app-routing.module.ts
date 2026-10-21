@@ -3,11 +3,13 @@ import { Routes, RouterModule } from '@angular/router';
 
 import { ProductListComponent } from './product-list/product-list.component';
 import { ProductDetailComponent } from './product-detail/product-detail.component';
+import { CartComponent } from './cart/cart.component';
 import { NotFoundComponent } from './not-found/not-found.component';
 
 export const routes: Routes = [
   { path: '', component: ProductListComponent },
   { path: 'products/:slug', component: ProductDetailComponent },
+  { path: 'cart', component: CartComponent },
   { path: '**', component: NotFoundComponent },
 ];
 

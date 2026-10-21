@@ -295,6 +295,15 @@ describe('CartComponent', () => {
     });
   });
 
+  it('[BR-C2] drops the line when its stock has fallen to zero', () => {
+    setup([{ product: product(), quantity: 2 }]);
+    shop.cart[0].product.stock = 0;
+    change('Lavender Dusk', '3');
+    expect(shop.cart.length).toBe(0);
+    expect(el().textContent).toContain('Your cart is empty');
+    expect(status()).toBe('You can buy at most 0 of Lavender Dusk.');
+  });
+
   it('[BR-C3] removes a line with the Remove button', () => {
     setup([
       { product: product(), quantity: 2 },
@@ -306,7 +315,7 @@ describe('CartComponent', () => {
     expect(button.querySelector('.sr-only')!.textContent).toBe(
       ' Lavender Dusk',
     );
-    expect(button.firstChild!.textContent).toBe('Remove');
+    expect(button.firstChild!.textContent!.trim()).toBe('Remove');
     button.click();
     fixture.detectChanges();
     expect(shop.cart.length).toBe(1);

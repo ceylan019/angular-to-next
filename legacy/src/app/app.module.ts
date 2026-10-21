@@ -9,6 +9,7 @@ import { NotFoundComponent } from './not-found/not-found.component';
 import { ApiUrlInterceptor } from './api-url.interceptor';
 import { ProductListComponent } from './product-list/product-list.component';
 import { ProductDetailComponent } from './product-detail/product-detail.component';
+import { CartComponent } from './cart/cart.component';
 import { HeaderComponent } from './header/header.component';
 
 @NgModule({
@@ -18,6 +19,7 @@ import { HeaderComponent } from './header/header.component';
     HeaderComponent,
     ProductListComponent,
     ProductDetailComponent,
+    CartComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'serverApp' }),

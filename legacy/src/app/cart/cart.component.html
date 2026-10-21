@@ -1,0 +1,67 @@
+<h1>Your cart</h1>
+<div role="status" class="text-danger mb-3">{{ message }}</div>
+<div *ngIf="items.length === 0">
+  <p>Your cart is empty</p>
+  <a routerLink="/">Continue shopping</a>
+</div>
+<div *ngIf="items.length > 0">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Candle</th>
+        <th>Price</th>
+        <th>Quantity</th>
+        <th>Total</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of items">
+        <td>
+          <a [routerLink]="['/products', item.product.slug]">{{
+            item.product.name
+          }}</a>
+        </td>
+        <td>{{ item.product.priceCents / 100 | currency }}</td>
+        <td>
+          <label class="sr-only" [for]="'quantity-' + item.product.id"
+            >Quantity for {{ item.product.name }}</label
+          >
+          <input
+            #quantity
+            [id]="'quantity-' + item.product.id"
+            type="number"
+            class="form-control"
+            min="1"
+            [max]="cap(item)"
+            [value]="item.quantity"
+            (change)="changeQuantity(item, quantity)"
+          />
+        </td>
+        <td>
+          {{ (item.product.priceCents / 100) * item.quantity | currency }}
+        </td>
+        <td>
+          <button
+            type="button"
+            class="btn btn-outline-danger btn-sm"
+            (click)="remove(item)"
+          >
+            Remove<span class="sr-only"> {{ item.product.name }}</span>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <dl>
+    <dt>Subtotal</dt>
+    <dd>{{ shop.getSubtotal() | currency }}</dd>
+    <dt>Shipping</dt>
+    <dd>
+      {{ shop.getShipping() === 0 ? 'Free' : (shop.getShipping() | currency) }}
+    </dd>
+    <dt>Total</dt>
+    <dd>{{ shop.getTotal() | currency }}</dd>
+  </dl>
+  <a class="btn btn-primary" routerLink="/checkout">Checkout</a>
+</div>
