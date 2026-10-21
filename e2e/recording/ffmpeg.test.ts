@@ -1,83 +1,140 @@
 import { describe, expect, it } from "vitest";
-import { padSeconds, stitchArgs } from "./ffmpeg.js";
+import { planSegments, stitchArgs, totalLength } from "./ffmpeg.js";
 
-describe("padSeconds", () => {
-  it("pads the legacy clip when the next clip is longer", () => {
-    expect(padSeconds(10, 12.5)).toEqual({ legacy: 2.5, next: 0 });
+describe("planSegments", () => {
+  it("cuts each clip at its own marks", () => {
+    const segments = planSegments([1, 2, 4], [0.5, 1, 1.5], [1, 1]);
+    expect(segments.map((segment) => segment.legacy)).toEqual([
+      [1, 2],
+      [2, 4],
+    ]);
+    expect(segments.map((segment) => segment.next)).toEqual([
+      [0.5, 1],
+      [1, 1.5],
+    ]);
   });
 
-  it("pads the next clip when the legacy clip is longer", () => {
-    expect(padSeconds(12.5, 10)).toEqual({ legacy: 0, next: 2.5 });
+  it("lets the longer of the two cuts set the length", () => {
+    const [first, second] = planSegments([0, 3, 4], [0, 1, 5], [0.5, 0.5]);
+    expect(first?.length).toBe(3);
+    expect(second?.length).toBe(4);
   });
 
-  it("pads nothing when the clips are equally long", () => {
-    expect(padSeconds(8, 8)).toEqual({ legacy: 0, next: 0 });
+  it("lifts a short step to its minimum length", () => {
+    const [first] = planSegments([0, 0.25], [0, 0.5], [1.2]);
+    expect(first?.length).toBe(1.2);
   });
 
-  it("rounds a tiny difference to three decimals", () => {
-    expect(padSeconds(1, 1.00049)).toEqual({ legacy: 0, next: 0 });
-    expect(padSeconds(1, 1.0006)).toEqual({ legacy: 0.001, next: 0 });
+  it("keeps the same length for both halves of a step", () => {
+    for (const segment of planSegments([0, 2, 3], [0, 1, 7], [1, 1])) {
+      expect(segment.length).toBeGreaterThanOrEqual(
+        segment.legacy[1] - segment.legacy[0],
+      );
+      expect(segment.length).toBeGreaterThanOrEqual(
+        segment.next[1] - segment.next[0],
+      );
+    }
   });
 
-  it("rejects a clip with no duration", () => {
-    expect(() => padSeconds(0, 5)).toThrow("positive");
-    expect(() => padSeconds(5, Number.NaN)).toThrow("positive");
+  it("rounds lengths to three decimals", () => {
+    const [first] = planSegments([0, 1.00049], [0, 0.2], [0.1]);
+    expect(first?.length).toBe(1);
+  });
+
+  it("rejects clips with a different number of marks", () => {
+    expect(() => planSegments([0, 1], [0, 1, 2], [1])).toThrow("same number");
+  });
+
+  it("rejects fewer than two marks", () => {
+    expect(() => planSegments([0], [0], [])).toThrow("two marks");
+  });
+
+  it("rejects marks that do not increase", () => {
+    expect(() => planSegments([0, 1, 1], [0, 1, 2], [1, 1])).toThrow(
+      "increase",
+    );
+    expect(() => planSegments([0, 2, 1], [0, 1, 2], [1, 1])).toThrow(
+      "increase",
+    );
+    expect(() => planSegments([0, Number.NaN], [0, 1], [1])).toThrow(
+      "increase",
+    );
+  });
+
+  it("rejects a minimum list that does not match the steps", () => {
+    expect(() => planSegments([0, 1, 2], [0, 1, 2], [1])).toThrow("minimum");
+  });
+});
+
+describe("totalLength", () => {
+  it("adds the segment lengths", () => {
+    expect(totalLength(planSegments([0, 1, 2], [0, 1, 2], [1.5, 2]))).toBe(3.5);
   });
 });
 
 describe("stitchArgs", () => {
+  const segments = planSegments([1, 2, 4], [0.5, 1, 1.5], [1.2, 1.2]);
   const args = stitchArgs(
     "l.webm",
     "n.webm",
+    ["lc.png", "nc.png"],
     "out.gif",
-    {
-      legacy: 2,
-      next: 0,
-    },
-    4,
+    segments,
   );
+  const graph = args[args.indexOf("-filter_complex") + 1] ?? "";
 
-  it("reads both inputs and writes the gif last", () => {
+  it("reads both clips, then both captions as stills limited to the total", () => {
     expect(args.slice(0, 5)).toEqual(["-y", "-i", "l.webm", "-i", "n.webm"]);
-    expect(args.at(-1)).toBe("out.gif");
+    expect(args.slice(5, 9)).toEqual(["-loop", "1", "-t", "3.2"]);
+    expect(args.slice(9, 11)).toEqual(["-i", "lc.png"]);
+    expect(args.slice(11, 15)).toEqual(["-loop", "1", "-t", "3.2"]);
+    expect(args.slice(15, 17)).toEqual(["-i", "nc.png"]);
   });
 
-  it("holds the last frame of the shorter clip", () => {
-    const graph = args[args.indexOf("-filter_complex") + 1] ?? "";
+  it("trims every step from the clip at its marks", () => {
+    expect(graph).toContain("[0:v]fps=10,trim=start=1:end=2");
+    expect(graph).toContain("[0:v]fps=10,trim=start=2:end=4");
+    expect(graph).toContain("[1:v]fps=10,trim=start=0.5:end=1");
+    expect(graph).toContain("[1:v]fps=10,trim=start=1:end=1.5");
+  });
+
+  it("restarts timestamps and holds the last frame for the padding", () => {
     expect(graph).toContain(
-      "[0:v]setpts=4*PTS,tpad=stop_mode=clone:stop_duration=2[l]",
+      "setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=0.2[l0]",
     );
-    expect(graph).toContain("[1:v]setpts=4*PTS,null[n]");
+    expect(graph).toContain(
+      "setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=0.7[n0]",
+    );
+    expect(graph).toContain("stop_duration=0[l1]");
+    expect(graph).toContain("stop_duration=1.5[n1]");
   });
 
-  it("slows both clips down by the given factor before padding", () => {
-    const graph = args[args.indexOf("-filter_complex") + 1] ?? "";
-    expect(graph).toContain("[0:v]setpts=4*PTS,tpad=stop_mode=clone");
-    expect(graph).toContain("[1:v]setpts=4*PTS,null[n]");
+  it("joins the steps of each half in order", () => {
+    expect(graph).toContain("[l0][l1]concat=n=2:v=1:a=0[L]");
+    expect(graph).toContain("[n0][n1]concat=n=2:v=1:a=0[N]");
   });
 
-  it("rejects a slow factor below one", () => {
-    expect(() =>
-      stitchArgs("l", "n", "o", { legacy: 0, next: 0 }, 0.5),
-    ).toThrow("at least 1");
-  });
-
-  it("stacks side by side and builds a palette", () => {
-    const graph = args[args.indexOf("-filter_complex") + 1] ?? "";
-    expect(graph).toContain("[l][n]hstack=inputs=2,fps=10,split[a][b]");
+  it("puts each caption under its half, then the halves side by side", () => {
+    expect(graph).toContain("[L][2:v]vstack=inputs=2[LC]");
+    expect(graph).toContain("[N][3:v]vstack=inputs=2[NC]");
+    expect(graph).toContain("[LC][NC]hstack=inputs=2,fps=10,split[a][b]");
     expect(graph).toContain("[a]palettegen[p];[b][p]paletteuse");
   });
 
-  it("pads the next clip when it is the shorter one", () => {
-    const graph =
-      stitchArgs("l", "n", "o", { legacy: 0, next: 1.5 }, 4)[
-        stitchArgs("l", "n", "o", { legacy: 0, next: 1.5 }, 4).indexOf(
-          "-filter_complex",
-        ) + 1
-      ] ?? "";
-    expect(graph).toContain(
-      "[1:v]setpts=4*PTS,tpad=stop_mode=clone:stop_duration=1.5[n]",
+  it("limits the output to the total length and writes the gif last", () => {
+    expect(args.slice(-3)).toEqual(["-t", "3.2", "out.gif"]);
+  });
+
+  it("does not pad a step whose two halves already match", () => {
+    const even = stitchArgs(
+      "l",
+      "n",
+      ["a", "b"],
+      "o",
+      planSegments([0, 2], [0, 2], [1]),
     );
-    expect(graph).toContain("[0:v]setpts=4*PTS,null[l]");
+    const evenGraph = even[even.indexOf("-filter_complex") + 1] ?? "";
+    expect(evenGraph).toContain("stop_duration=0[l0]");
+    expect(evenGraph).toContain("stop_duration=0[n0]");
   });
 });
