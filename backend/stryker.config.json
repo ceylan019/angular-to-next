@@ -15,8 +15,6 @@
     "break": 90
   },
   "reporters": ["html", "json", "clear-text"],
-  "incremental": true,
-  "incrementalFile": "reports/stryker-incremental.json",
   "htmlReporter": {
     "fileName": "reports/mutation/index.html"
   },
