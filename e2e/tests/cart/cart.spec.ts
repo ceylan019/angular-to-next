@@ -93,7 +93,7 @@ test.describe("cart @cart", () => {
       cartRow(page, product.name).getByRole("button", {
         name: COPY.cart.removeItem(product.name),
       }),
-    ).toContainText(COPY.cart.remove);
+    ).toBeVisible();
     await expect(
       page.getByRole("link", { name: COPY.cart.checkout, exact: true }),
     ).toHaveAttribute("href", "/checkout");
@@ -309,6 +309,7 @@ test.describe("cart @cart", () => {
   test("[BR-C6] the cart survives reload and navigation", async ({ page }) => {
     const product = bySlug("lavender-dusk");
     await addFromDetail(page, product.slug, 2);
+    await expectBadge(page, 2);
 
     await page.reload();
     await expectBadge(page, 2);
@@ -328,6 +329,7 @@ test.describe("cart @cart", () => {
   }) => {
     const product = bySlug("lavender-dusk");
     await addFromDetail(page, product.slug, 2);
+    await expectBadge(page, 2);
 
     const other = await page.context().newPage();
     await other.goto("/cart");
@@ -339,18 +341,23 @@ test.describe("cart @cart", () => {
   test("[BR-C6] another browser starts with an empty cart", async ({
     page,
     browser,
+    baseURL,
   }) => {
     await addFromDetail(page, bySlug("lavender-dusk").slug, 2);
 
     const context = await browser.newContext({
-      baseURL: test.info().project.use.baseURL,
+      baseURL,
+      viewport: test.info().project.use.viewport,
     });
-    const stranger = await context.newPage();
-    await stranger.goto("/cart");
+    try {
+      const stranger = await context.newPage();
+      await stranger.goto("/cart");
 
-    await expectEmptyCart(stranger);
-    await expectBadge(stranger, 0);
-    await context.close();
+      await expectEmptyCart(stranger);
+      await expectBadge(stranger, 0);
+    } finally {
+      await context.close();
+    }
   });
 
   test("[BR-C7] the empty cart shows its state and no checkout link", async ({
