@@ -1,10 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, type Mock } from "vitest";
-import type { CartActionState } from "@/features/cart/cart-actions";
+import type {
+  CartActionState,
+  QuantityChange,
+} from "@/features/cart/cart-actions";
 import {
+  CartQuantityProvider,
   StatusRegion,
   StatusRegionProvider,
+  useCartActionState,
   useCartFormAction,
+  useCartQuantityAction,
 } from "./status-region";
 
 type Action = (
@@ -151,6 +157,150 @@ describe("StatusRegion", () => {
     expect(() => render(<StatusRegion />)).toThrow("StatusRegionProvider");
     expect(() =>
       render(<SendForm label="Send" slug="lavender-dusk" />),
+    ).toThrow("StatusRegionProvider");
+  });
+});
+
+type QuantityAction = (change: QuantityChange) => Promise<CartActionState>;
+
+function SendChange({
+  label,
+  change,
+}: {
+  label: string;
+  change: QuantityChange;
+}) {
+  const commit = useCartQuantityAction();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        commit(change);
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function LastStatus() {
+  return <p data-testid="last-status">{useCartActionState().status}</p>;
+}
+
+function renderQuantityRegion(action: QuantityAction) {
+  return render(
+    <CartQuantityProvider action={action}>
+      <StatusRegion />
+      <LastStatus />
+      <SendChange label="Set 15" change={{ productId: 7, quantity: "15" }} />
+      <SendChange label="Set 2" change={{ productId: 7, quantity: "2" }} />
+    </CartQuantityProvider>,
+  );
+}
+
+function quantityResults(...states: CartActionState[]): Mock<QuantityAction> {
+  const action = vi.fn<QuantityAction>();
+  for (const state of states) action.mockResolvedValueOnce(state);
+  return action;
+}
+
+const capped: CartActionState = {
+  status: "clamped",
+  message: "You can buy at most 10 of Lavender Dusk.",
+  submittedQuantity: "15",
+};
+
+describe("CartQuantityProvider", () => {
+  it("[BR-C2] starts idle with one empty status region", () => {
+    renderQuantityRegion(quantityResults());
+
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(screen.getByTestId("last-status")).toHaveTextContent("idle");
+  });
+
+  it("[BR-C2] sends the change to its action and shows the cap message", async () => {
+    const action = quantityResults(capped);
+    renderQuantityRegion(action);
+
+    fireEvent.click(screen.getByRole("button", { name: "Set 15" }));
+
+    expect(
+      await screen.findByText("You can buy at most 10 of Lavender Dusk."),
+    ).toBeInTheDocument();
+    expect(action).toHaveBeenCalledTimes(1);
+    expect(action).toHaveBeenCalledWith({ productId: 7, quantity: "15" });
+    expect(screen.getByTestId("last-status")).toHaveTextContent("clamped");
+  });
+
+  it("[BR-C2] clears an earlier cap message after a change that is not clamped", async () => {
+    const action = quantityResults(capped, {
+      status: "updated",
+      submittedQuantity: "2",
+    });
+    renderQuantityRegion(action);
+
+    fireEvent.click(screen.getByRole("button", { name: "Set 15" }));
+    await screen.findByText("You can buy at most 10 of Lavender Dusk.");
+    fireEvent.click(screen.getByRole("button", { name: "Set 2" }));
+
+    await vi.waitFor(() => {
+      expect(screen.getByTestId("last-status")).toHaveTextContent("updated");
+    });
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(action).toHaveBeenLastCalledWith({ productId: 7, quantity: "2" });
+  });
+
+  it("[BR-C2] keeps the region empty when a change fails", async () => {
+    renderQuantityRegion(
+      quantityResults({ status: "error", submittedQuantity: "15" }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Set 15" }));
+
+    await vi.waitFor(() => {
+      expect(screen.getByTestId("last-status")).toHaveTextContent("error");
+    });
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("[BR-C2] announces the same cap message again on a repeated clamp", async () => {
+    renderQuantityRegion(quantityResults(capped, { ...capped }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Set 15" }));
+    const first = await screen.findByText(
+      "You can buy at most 10 of Lavender Dusk.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Set 15" }));
+
+    await vi.waitFor(() => {
+      expect(
+        screen.getByText("You can buy at most 10 of Lavender Dusk."),
+      ).not.toBe(first);
+    });
+  });
+
+  it("refuses quantity changes outside a quantity provider", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(() =>
+      render(
+        <StatusRegionProvider action={vi.fn()}>
+          <SendChange label="Set" change={{ productId: 7, quantity: "1" }} />
+        </StatusRegionProvider>,
+      ),
+    ).toThrow("CartQuantityProvider");
+  });
+
+  it("offers no add form action under the quantity provider", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(() =>
+      render(
+        <CartQuantityProvider action={vi.fn()}>
+          <SendForm label="Send" slug="lavender-dusk" />
+        </CartQuantityProvider>,
+      ),
     ).toThrow("StatusRegionProvider");
   });
 });
