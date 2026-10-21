@@ -2,9 +2,7 @@ node_modules
 **/node_modules
 **/dist
 .git
-.super*
-AGENTS.md
-reports
-coverage
-.stryker-tmp
+**/reports
+**/coverage
+**/.stryker-tmp
 backend/public/images
