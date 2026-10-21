@@ -2,16 +2,21 @@ import { Location } from '@angular/common';
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { AppComponent } from './app.component';
 import { routes } from './app-routing.module';
 import { NotFoundComponent } from './not-found/not-found.component';
+import { HeaderComponent } from './header/header.component';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule.withRoutes(routes)],
-      declarations: [AppComponent, NotFoundComponent],
+      imports: [
+        RouterTestingModule.withRoutes(routes),
+        HttpClientTestingModule,
+      ],
+      declarations: [AppComponent, NotFoundComponent, HeaderComponent],
     }).compileComponents();
   });
 
@@ -22,6 +27,19 @@ describe('AppComponent', () => {
     fixture.detectChanges();
     return fixture.nativeElement;
   }
+
+  it('renders the header above the main container', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    const children = Array.from(
+      fixture.nativeElement.children as HTMLElement[],
+    );
+    expect(children.map((c) => c.tagName.toLowerCase())).toEqual([
+      'app-header',
+      'main',
+    ]);
+  });
 
   it('renders routed pages inside the main container', () => {
     const fixture = TestBed.createComponent(AppComponent);
