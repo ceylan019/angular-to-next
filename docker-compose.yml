@@ -53,3 +53,26 @@ services:
       interval: 2s
       timeout: 5s
       retries: 30
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        BACKEND_URL: http://backend:8080
+    environment:
+      BACKEND_URL: http://backend:8080
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch("http://localhost:3000/").then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))
+      interval: 2s
+      timeout: 5s
+      retries: 30
