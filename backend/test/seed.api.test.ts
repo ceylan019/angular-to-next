@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CATALOG } from "../src/db/catalog.js";
 import type { Db } from "../src/db/client.js";
@@ -117,8 +117,19 @@ describe("seed", () => {
   it("runMigrations is idempotent", async () => {
     await runMigrations(db);
     await runMigrations(db);
-    const [familyCount] = await db.select({ n: count() }).from(families);
-    expect(familyCount?.n).toBeGreaterThanOrEqual(0);
+    const applied = await db.execute(
+      sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
+    );
+    expect(applied.rows[0]?.["n"]).toBe(1);
+    const tables = await db.execute(
+      sql`select table_name from information_schema.tables where table_schema = 'public' order by table_name`,
+    );
+    expect(tables.rows.map((r) => r["table_name"])).toEqual([
+      "families",
+      "order_lines",
+      "orders",
+      "products",
+    ]);
   });
 
   it("rejects invalid rows through check constraints", async () => {

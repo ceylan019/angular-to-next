@@ -1,8 +1,17 @@
 import { fileURLToPath } from "node:url";
 import express from "express";
+import type { Config } from "./config.js";
+import type { Db } from "./db/client.js";
+
 const imagesDir = fileURLToPath(new URL("../public/images", import.meta.url));
 
-export function createApp(): express.Express {
+export type AppDeps = {
+  db: Db;
+  config: Config;
+  clock?: () => Date;
+};
+
+export function createApp(_deps: AppDeps): express.Express {
   const app = express();
   app.set("query parser", "simple");
   app.use(express.json({ limit: "100kb" }));

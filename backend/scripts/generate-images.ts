@@ -1,5 +1,5 @@
-import { mkdir } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { mkdir, readdir } from "node:fs/promises";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import sharp from "sharp";
 import catalog from "../src/db/catalog.json" with { type: "json" };
 
@@ -90,15 +90,37 @@ function renderSvg(name: string, family: string): string {
 </svg>`;
 }
 
-const outDir = fileURLToPath(new URL("../public/images", import.meta.url));
-await mkdir(outDir, { recursive: true });
-
-await Promise.all(
-  catalog.map((product) =>
-    sharp(Buffer.from(renderSvg(product.name, product.family)))
-      .jpeg({ quality: 88 })
-      .toFile(`${outDir}/${product.slug}.jpg`),
-  ),
+export const imagesDir = fileURLToPath(
+  new URL("../public/images", import.meta.url),
 );
 
-console.log(`wrote ${String(catalog.length)} images to ${outDir}`);
+export async function generateImages(outDir = imagesDir): Promise<number> {
+  await mkdir(outDir, { recursive: true });
+  await Promise.all(
+    catalog.map((product) =>
+      sharp(Buffer.from(renderSvg(product.name, product.family)))
+        .jpeg({ quality: 88 })
+        .toFile(`${outDir}/${product.slug}.jpg`),
+    ),
+  );
+  return catalog.length;
+}
+
+export async function generateImagesIfMissing(
+  outDir = imagesDir,
+): Promise<boolean> {
+  const existing = new Set(await readdir(outDir).catch(() => [] as string[]));
+  if (catalog.every((p) => existing.has(`${p.slug}.jpg`))) {
+    return false;
+  }
+  await generateImages(outDir);
+  return true;
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  const written = await generateImages();
+  console.log(`wrote ${String(written)} images to ${imagesDir}`);
+}
