@@ -35,4 +35,4 @@ jobs:
         if: always()
         with:
           name: flake-${{ matrix.target }}
-          path: e2e/playwright-report
+          path: e2e/playwright-report/${{ matrix.target }}

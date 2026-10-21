@@ -150,7 +150,7 @@ jobs:
         if: always()
         with:
           name: playwright-${{ matrix.target }}-${{ matrix.runner }}
-          path: e2e/playwright-report
+          path: e2e/playwright-report/${{ matrix.target }}
 
   traceability:
     runs-on: ubuntu-24.04
