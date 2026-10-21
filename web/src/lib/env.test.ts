@@ -68,7 +68,20 @@ describe("parseEnv", () => {
     "http://",
     "backend:8080",
     "/api",
-  ])("rejects the non http url %s", (value) => {
+  ])("rejects the unusable url %s", (value) => {
+    expect(() => parseEnv({ BACKEND_URL: value })).toThrow(/BACKEND_URL/);
+  });
+
+  it.each([
+    "http://backend:8080?debug=1",
+    "http://backend:8080/shop?debug=1",
+    "http://backend:8080?",
+    "http://backend:8080#top",
+    "http://backend:8080/shop#",
+    "http://user@backend:8080",
+    "http://user:secret@backend:8080",
+    "http://:secret@backend:8080",
+  ])("rejects the url %s that would break path concatenation", (value) => {
     expect(() => parseEnv({ BACKEND_URL: value })).toThrow(/BACKEND_URL/);
   });
 });

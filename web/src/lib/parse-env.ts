@@ -1,8 +1,16 @@
 import { z } from "zod";
 
+function isPlainBase(value: string): boolean {
+  if (value.includes("?") || value.includes("#")) return false;
+  if (!URL.canParse(value)) return true;
+  const url = new URL(value);
+  return url.username === "" && url.password === "";
+}
+
 const envSchema = z.object({
   BACKEND_URL: z
     .url({ protocol: /^https?$/ })
+    .refine(isPlainBase, "must not contain a query, fragment or credentials")
     .transform((url) => url.replace(/\/+$/, "")),
 });
 

@@ -7,5 +7,6 @@ export default defineConfig({
     ...baseConfig.test,
     environment: "node",
     include: ["src/features/**/*.test.ts", "src/lib/**/*.test.ts"],
+    setupFiles: ["src/test/setup.node.ts"],
   },
 });
