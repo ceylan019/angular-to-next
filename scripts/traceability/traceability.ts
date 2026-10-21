@@ -24,14 +24,17 @@ type Row = { id: string; listed: readonly Layer[]; required: readonly Layer[] };
 const LAYERS: readonly Layer[] = ["legacy", "web", "api", "e2e"];
 const FLOWS: readonly Flow[] = ["browse", "cart", "checkout"];
 const KNOWN_DIFFERENCE_LAYERS: readonly Layer[] = ["legacy", "e2e"];
-const TEST_CALLEES: ReadonlySet<string> = new Set([
-  "it",
-  "test",
+const GROUP_CALLEES: ReadonlySet<string> = new Set([
   "describe",
   "test.describe",
+  "describe.each()",
+]);
+const TEST_CALLEES: ReadonlySet<string> = new Set([
+  ...GROUP_CALLEES,
+  "it",
+  "test",
   "it.each()",
   "test.each()",
-  "describe.each()",
 ]);
 const FLOW_CALLEES: ReadonlySet<string> = new Set(["test", "test.describe"]);
 const REQUIREMENT_ROW = /^\|\s*BR-/;
@@ -152,6 +155,14 @@ function titleOf(expression: ts.Expression, source: ts.SourceFile): Title {
   return { text: `\${${expression.getText(source)}}`, literal: SEPARATOR };
 }
 
+function isTestBody(node: ts.Expression): boolean {
+  return (
+    ts.isArrowFunction(node) ||
+    ts.isFunctionExpression(node) ||
+    (ts.isCallExpression(node) && node.arguments.some(isTestBody))
+  );
+}
+
 function titledCall(
   call: ts.CallExpression,
   source: ts.SourceFile,
@@ -172,6 +183,32 @@ function titledCall(
   };
 }
 
+function callHits(
+  call: ts.CallExpression,
+  source: ts.SourceFile,
+  file: SourceFile,
+): Hit[] {
+  const titled = titledCall(call, source, TEST_CALLEES);
+  const [, ...rest] = call.arguments;
+  if (
+    titled === undefined ||
+    !(GROUP_CALLEES.has(titled.callee) || rest.some(isTestBody))
+  ) {
+    return [];
+  }
+  const ids = new Set(
+    Array.from(titled.title.literal.matchAll(ID), (match) =>
+      match[0].slice(1, -1),
+    ),
+  );
+  return [...ids].map((id) => ({
+    id,
+    layer: file.layer,
+    path: file.path,
+    title: titled.title.text,
+  }));
+}
+
 export function extractTestIds(file: SourceFile): Hit[] {
   const source = ts.createSourceFile(
     file.path,
@@ -180,23 +217,8 @@ export function extractTestIds(file: SourceFile): Hit[] {
   );
   const hits: Hit[] = [];
   const visit = (node: ts.Node): void => {
-    const titled = ts.isCallExpression(node)
-      ? titledCall(node, source, TEST_CALLEES)
-      : undefined;
-    if (titled !== undefined) {
-      const ids = new Set(
-        Array.from(titled.title.literal.matchAll(ID), (match) =>
-          match[0].slice(1, -1),
-        ),
-      );
-      for (const id of ids) {
-        hits.push({
-          id,
-          layer: file.layer,
-          path: file.path,
-          title: titled.title.text,
-        });
-      }
+    if (ts.isCallExpression(node)) {
+      hits.push(...callHits(node, source, file));
     }
     ts.forEachChild(node, visit);
   };

@@ -4,7 +4,7 @@ Code level debt in `legacy/` that changes no behavior. The tests pass and the pa
 
 ## TypeScript strict mode is off, with `any` in many signatures
 
-- **Where:** `legacy/tsconfig.json` sets no `strict` flag, so every strict check is off. `any` appears 35 times across nine files in `legacy/src/app`: every HTTP method of `shop.service.ts` returns `Observable<any>`, `models.ts` types a cart line's product as `any`, and `product-list.component.ts`, `product-detail.component.ts`, `order-confirmation.component.ts`, `checkout.component.ts`, `checkout-validators.ts`, `cart-not-empty.guard.ts` and `api-url.interceptor.ts` all take or hold `any`.
+- **Where:** `legacy/tsconfig.json` sets no `strict` flag, so every strict check is off. `any` appears 37 times on 35 lines across nine files in `legacy/src/app`: every HTTP method of `shop.service.ts` returns `Observable<any>` or `Observable<any[]>`, `models.ts` types a cart line's product as `any`, and `product-list.component.ts`, `product-detail.component.ts`, `order-confirmation.component.ts`, `checkout.component.ts`, `checkout-validators.ts`, `cart-not-empty.guard.ts` and `api-url.interceptor.ts` all take, return or hold `any`.
 - **Why it hurts:** the compiler cannot catch a misspelled field, a missing null check or a backend response that changed shape. Those mistakes surface at runtime, in front of a customer.
 - **How the rewrite removes it:** `strict` plus `noUncheckedIndexedAccess`, and zod validation at every boundary (backend responses, environment variables, URL search params, forms and server action inputs), so data is typed because it was checked.
 
@@ -16,7 +16,7 @@ Code level debt in `legacy/` that changes no behavior. The tests pass and the pa
 
 ## Shipping logic is copy pasted between the cart and checkout
 
-- **Where:** the cart page uses `ShopService.getShipping()` in `legacy/src/app/shop.service.ts`, and `CheckoutComponent.calcShipping()` in `legacy/src/app/checkout/checkout.component.ts` repeats the same `subtotal > 50 ? 0 : 5.95` with its own empty cart guard. The same habit shows elsewhere: the line cap `Math.min(10, stock)` is written in `shop.service.ts`, `cart/cart.component.ts` and `product-detail/product-detail.component.ts`.
+- **Where:** the cart page uses `ShopService.getShipping()` in `legacy/src/app/shop.service.ts`, which returns `this.getSubtotal() > 50 ? 0 : 5.95`, and `CheckoutComponent.calcShipping()` in `legacy/src/app/checkout/checkout.component.ts` repeats the rule as `subtotal > 50 ? 0 : 5.95` with its own empty cart guard. The same habit shows elsewhere: the line cap is computed three times, as `Math.min(MAX_PER_LINE, product.stock)` in `shop.service.ts`, `Math.min(10, item.product.stock)` in `cart/cart.component.ts` and `Math.min(10, this.product.stock)` in `product-detail/product-detail.component.ts`.
 - **Why it hurts:** a fix has to be made in every copy. KD-03 lives in both copies of the shipping rule, so correcting one would make the cart and the checkout disagree about the same order.
 - **How the rewrite removes it:** one totals function used by both the cart page and the checkout summary, and one cart rules module that owns the cap.
 
@@ -40,7 +40,7 @@ Code level debt in `legacy/` that changes no behavior. The tests pass and the pa
 
 ## Prices handled as floating point dollars
 
-- **Where:** `getSubtotal()`, `getShipping()` and `getTotal()` in `legacy/src/app/shop.service.ts` work in dollars (`priceCents / 100`, compared with `50`, adding `5.95`), and the templates `cart/cart.component.html`, `checkout/checkout.component.html`, `product-list/product-list.component.html`, `product-detail/product-detail.component.html` and `order-confirmation/order-confirmation.component.html` divide cents by 100 before formatting. The checkout template also adds subtotal and shipping itself.
+- **Where:** `getSubtotal()`, `getShipping()` and `getTotal()` in `legacy/src/app/shop.service.ts` work in dollars (`(l.product.priceCents / 100) * l.quantity`, `this.getSubtotal() > 50 ? 0 : 5.95` and `this.getSubtotal() + this.getShipping()`), and the templates `cart/cart.component.html`, `checkout/checkout.component.html`, `product-list/product-list.component.html`, `product-detail/product-detail.component.html` and `order-confirmation/order-confirmation.component.html` divide cents by 100 before formatting. The checkout template also adds subtotal and shipping itself.
 - **Why it hurts:** binary floating point cannot represent most cent amounts exactly, so sums drift. The truncation in `getSubtotal()` turns that drift into a visible missing cent (KD-01).
 - **How the rewrite removes it:** integer cents everywhere, as the backend already stores them, formatted only at the edge with `Intl.NumberFormat`.
 
@@ -52,9 +52,9 @@ Code level debt in `legacy/` that changes no behavior. The tests pass and the pa
 
 ## Old dependencies with known vulnerabilities
 
-- **Where:** `legacy/package.json` pins Angular 10.2.5 and Angular Universal 10.1.0 (Angular 10 left long term support at the end of 2021), Express 4.17.3 and http-proxy-middleware 1.0.6, and `legacy/Dockerfile` runs Node 12.22.12, which reached end of life in April 2022. When this register was written, `npm audit --omit=dev` run with a current npm against `legacy/package-lock.json` reported 17 known vulnerabilities in production dependencies: 2 critical, 11 high, 1 moderate and 3 low. They include server side request forgery and header injection in `@nguniversal/express-engine`, cross site scripting and server side request forgery advisories across `@angular/*`, an open redirect and cross site scripting through `res.redirect` in Express, and denial of service in http-proxy-middleware.
+- **Where:** `legacy/package.json` pins Angular 10.2.5 and Angular Universal 10.1.0 (Angular 10 left long term support at the end of 2021), Express 4.17.3 and http-proxy-middleware 1.0.6, and `legacy/Dockerfile` runs Node 12.22.12, which reached end of life in April 2022. When this register was written, `npm audit --omit=dev --package-lock-only` run with a current npm against `legacy/package-lock.json` reported 17 known vulnerabilities in production dependencies: 2 critical, 11 high, 1 moderate and 3 low. They include server side request forgery and header injection in `@nguniversal/express-engine`, cross site scripting and server side request forgery advisories across `@angular/*`, an open redirect and cross site scripting through `res.redirect` in Express, and denial of service in http-proxy-middleware.
 - **Why it hurts:** the fixes ship only in newer major versions, and the toolchain is too old to take them without a migration of its own. Node 12 gets no security fixes at all.
-- **How the rewrite removes it:** the latest stable Next.js and React on the current Node Active LTS, every dependency pinned exactly. The audit counts of both apps are compared in the results.
+- **How the rewrite removes it:** the latest stable Next.js and React on the current Node Active LTS, every dependency pinned exactly. The audit counts of both apps will be compared in the old versus new results.
 
 ## Accessibility debt that leaves page structure unchanged
 

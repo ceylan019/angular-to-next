@@ -9,7 +9,7 @@ Web unit tests for the new behavior land with the rewrite, flow by flow.
 ## KD-01 Cart amounts lose a cent
 
 - **Rule:** BR-C5
-- **Legacy behavior:** `ShopService.getSubtotal()` adds up `priceCents / 100 * quantity` in floating point dollars and truncates the sum to cents. One Fig & Cassis at $16.15 shows a subtotal of $16.14 and a total of $22.09. Two show a subtotal of $32.29 beside a line total of $32.30, because line totals go through the currency pipe, which rounds. Three happen to come out exact at $48.45.
+- **Legacy behavior:** `ShopService.getSubtotal()` adds up `(l.product.priceCents / 100) * l.quantity` in floating point dollars and truncates the sum to cents with `Math.floor(sum * 100) / 100`. One Fig & Cassis at $16.15 shows a subtotal of $16.14 and a total of $22.09. Two show a subtotal of $32.29 beside a line total of $32.30, because line totals go through the currency pipe, which rounds. Three happen to come out exact at $48.45.
 - **New behavior:** amounts are integer cents from the backend to the page, so the subtotal is always exact: one Fig & Cassis shows $16.15 and a total of $22.10.
 - **Legacy unit tests that encode it:**
   - `legacy/src/app/shop.service.spec.ts`: "[BR-C5] [KD-01] truncates the subtotal of a $16.15 candle to $16.14"
@@ -42,7 +42,7 @@ Web unit tests for the new behavior land with the rewrite, flow by flow.
 ## KD-03 A subtotal of exactly $50.00 still pays shipping
 
 - **Rule:** BR-C5
-- **Legacy behavior:** free shipping is written as `subtotal > 50 ? 0 : 5.95`, "greater than" where the rule says "at or above", so a subtotal of exactly $50.00 is charged $5.95 for a total of $55.95. The rule is written twice, in `ShopService.getShipping()` and again in `CheckoutComponent.calcShipping()`, and both copies carry the bug.
+- **Legacy behavior:** free shipping is written as `this.getSubtotal() > 50 ? 0 : 5.95` in `ShopService.getShipping()` and again as `subtotal > 50 ? 0 : 5.95` in `CheckoutComponent.calcShipping()`. Both copies use "greater than" where the rule says "at or above", so a subtotal of exactly $50.00 is charged $5.95 for a total of $55.95.
 - **New behavior:** shipping is free at exactly $50.00, so the total is $50.00.
 - **Legacy unit tests that encode it:**
   - `legacy/src/app/shop.service.spec.ts`: "[BR-C5] [KD-03] charges shipping at exactly $50.00"

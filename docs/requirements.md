@@ -2,6 +2,8 @@
 
 Every business rule the shop must keep through the migration. Test titles in every suite carry the IDs they cover in square brackets, for example `[BR-C5]`, and `pnpm traceability` turns them into [traceability.md](traceability.md). Known differences, where the legacy app breaks one of these rules on purpose, are listed in [known-differences.md](known-differences.md).
 
+IDs go on test titles, never in comments or variables: an ID on an `it` or `test` title covers that test, and an ID on a group title (`describe` or `test.describe`) covers every test in the group. A test without a body, such as a pending or todo test, covers nothing.
+
 ## Layers
 
 - `legacy`: Karma and Jasmine unit and integration tests of the Angular app, in `legacy/src`.

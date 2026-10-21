@@ -380,9 +380,50 @@ describe("extractTestIds", () => {
     expect(legacy(content)).toEqual([]);
   });
 
+  it("needs a test body for it and test hits but not for groups", () => {
+    const content = [
+      'it("[BR-B1] later");',
+      'test("[BR-B2] pending", "not a function");',
+      'it("[BR-B3] by reference", runCase);',
+      'it.each([1])("[BR-B4] no body %s");',
+      'test.each([1])("[BR-B5] options only %s", { timeout: 5 });',
+      'test("[BR-B6] wrapped value", wrap(5));',
+      'it("[BR-B7] wrapped reference", fakeAsync(runCase));',
+      'describe("[BR-C1] group by reference", groupBody);',
+      'test.describe("[BR-C2] group with details @cart", { tag: "@slow" }, () => {});',
+      'describe.each([1])("[BR-C3] group %s");',
+    ].join("\n");
+
+    expect(ids(content)).toEqual(["BR-C1", "BR-C2", "BR-C3"]);
+  });
+
+  it("accepts function bodies, wrapped bodies and bodies after options", () => {
+    const content = [
+      'it("[BR-K1] function", function () {});',
+      'it("[BR-K2] fake async", fakeAsync(() => {}));',
+      'it("[BR-K3] nested wrappers", fakeAsync(waitForAsync(async () => {})));',
+      'it("[BR-K4] inject", inject([ShopService], (shop) => {}));',
+      'it("[BR-K5] timeout", () => {}, 5000);',
+      'test("[BR-K6] details", { tag: "@slow" }, async () => {});',
+      'test.each([1])("[BR-K7] each %s", async function () {});',
+    ].join("\n");
+
+    expect(ids(content)).toEqual([
+      "BR-K1",
+      "BR-K2",
+      "BR-K3",
+      "BR-K4",
+      "BR-K5",
+      "BR-K6",
+      "BR-K7",
+    ]);
+  });
+
   it("recognises two digit numbers and malformed ids so they can be reported", () => {
     expect(
-      ids("it('[BR-B10] [KD-123] [BR-Z1] [br-c5] [BR-C] [KD-] [BR-5]', f);"),
+      ids(
+        "it('[BR-B10] [KD-123] [BR-Z1] [br-c5] [BR-C] [KD-] [BR-5]', () => {});",
+      ),
     ).toEqual(["BR-B10", "KD-123", "BR-Z1"]);
   });
 
