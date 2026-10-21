@@ -25,6 +25,7 @@ const LIST_PAGE_CLIENT_MODULES: [string, () => Promise<unknown>][] = [
     () => import("@/features/catalog/sort-select-control"),
   ],
   ["add to cart form", () => import("@/features/cart/add-to-cart-form")],
+  ["error page", () => import("./error")],
 ];
 
 describe("client modules on the product list", () => {
