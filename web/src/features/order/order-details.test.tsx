@@ -137,7 +137,7 @@ describe("OrderDetails", () => {
       <OrderDetails
         order={{
           ...order,
-          lines: [{ ...order.lines[0], name: long }],
+          lines: order.lines.map((line) => ({ ...line, name: long })),
         }}
       />,
     );
