@@ -10,6 +10,14 @@ export type Vulnerabilities = {
   total: number;
 };
 
+const SEVERITIES = new Set<unknown>([
+  "info",
+  "low",
+  "moderate",
+  "high",
+  "critical",
+]);
+
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -21,15 +29,14 @@ export function unreadable(): never {
 }
 
 export function countVulnerabilities(report: unknown): Vulnerabilities {
-  const metadata = isRecord(report) ? report.metadata : undefined;
-  const vulnerabilities = isRecord(metadata)
-    ? metadata.vulnerabilities
-    : undefined;
-  if (!isRecord(vulnerabilities)) unreadable();
-  const count = (severity: string): number => {
-    const value = vulnerabilities[severity];
-    return isCount(value) ? value : unreadable();
-  };
+  const advisories = isRecord(report) ? report.advisories : undefined;
+  if (!isRecord(advisories)) unreadable();
+  const severities = Object.values(advisories).map((advisory) => {
+    const severity = isRecord(advisory) ? advisory.severity : undefined;
+    return SEVERITIES.has(severity) ? severity : unreadable();
+  });
+  const count = (severity: string): number =>
+    severities.filter((value) => value === severity).length;
   const critical = count("critical");
   const high = count("high");
   const moderate = count("moderate");

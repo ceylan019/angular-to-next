@@ -1,7 +1,12 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { gzipSync } from "node:zlib";
 import { chromium, type Page, type Response as PageResponse } from "playwright";
+import {
+  isScriptResponse,
+  parseRequestCount,
+  sumScriptSizes,
+  type ScriptSizes,
+} from "./measurements.ts";
 
 const ROOT = join(import.meta.dirname, "..", "..");
 const OUTPUT = join(ROOT, "reports", "metrics.json");
@@ -31,17 +36,27 @@ async function backend(
   return response;
 }
 
-export async function measureJsBytes(baseURL: string): Promise<number> {
+export async function measureScripts(baseURL: string): Promise<ScriptSizes> {
   return inFreshPage(async (page) => {
     const scripts: PageResponse[] = [];
     page.on("response", (response) => {
-      if (response.request().resourceType() === "script" && response.ok()) {
+      if (
+        isScriptResponse(response.request().resourceType(), response.status())
+      ) {
         scripts.push(response);
       }
     });
     await page.goto(new URL("/", baseURL).href, { waitUntil: "load" });
-    const bodies = await Promise.all(scripts.map((script) => script.body()));
-    return bodies.reduce((sum, body) => sum + gzipSync(body).length, 0);
+    const untilLoad = [...scripts];
+    await page.waitForLoadState("networkidle");
+    return sumScriptSizes(
+      await Promise.all(
+        untilLoad.map(async (script) => ({
+          url: script.url(),
+          body: await script.body(),
+        })),
+      ),
+    );
   });
 }
 
@@ -53,23 +68,16 @@ export async function measureBackendCalls(
   await inFreshPage((page) =>
     page.goto(new URL(path, baseURL).href, { waitUntil: "networkidle" }),
   );
-  const body: unknown = await (
-    await backend("/api/test/request-count", "GET")
-  ).json();
-  const count =
-    typeof body === "object" && body !== null && "count" in body
-      ? body.count
-      : undefined;
-  if (typeof count !== "number") {
-    throw new Error("The backend request count is not a number");
-  }
-  return count;
+  const response = await backend("/api/test/request-count", "GET");
+  return parseRequestCount(await response.json());
 }
 
 async function measure(baseURL: string) {
+  const { jsBytes, scripts } = await measureScripts(baseURL);
   return {
-    jsBytes: await measureJsBytes(baseURL),
+    jsBytes,
     backendCalls: await measureBackendCalls(baseURL, PRODUCT_PATH),
+    scripts,
   };
 }
 

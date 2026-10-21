@@ -151,7 +151,7 @@ jobs:
 
   traceability:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

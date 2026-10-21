@@ -70,10 +70,13 @@ const METRICS_FILE = "metrics.json";
 const WEB_PROTOCOLS = new Set(["http:", "https:"]);
 export const USAGE = "Usage: pnpm results -- --run <CI run URL>";
 const SECTION_END = /^#{1,2} /;
+const OPENING_FENCE = /^ {0,3}(`{3,}(?!.*`)|~{3,})/;
 const HEADER: Row = ["Metric", "Legacy", "New"];
 
 const INTRO =
-  "Old versus new, measured in CI on one runner against the same backend and the same data. Legacy is the Angular 10 app and New is the Next.js app, both running in their production containers.";
+  "Legacy is the Angular 10 app and New is the Next.js app, both running in their production containers against the same backend and the same data. Each pair measured on a running stack (Lighthouse, JavaScript on first load, backend calls) is measured for both apps on the same runner within one CI run.";
+const COVERAGE_NOTE =
+  "Line coverage scopes differ: Karma instruments only the legacy files the specs load, while Vitest V8 reports every file under the new app's `src`.";
 const NA_NOTE =
   "A cell reads n/a when its report is missing or unreadable in this run, with the reason in parentheses.";
 const LEGACY_MUTATION_NOTE =
@@ -82,9 +85,9 @@ const METHOD = [
   "## How each number is measured",
   "",
   "- Lighthouse: the median score of 5 mobile runs per page, out of 100.",
-  "- JavaScript on first load: the sum of the gzip sizes of each script response body on `/`, compressed by the measuring script with zlib for both apps, because the legacy server does not compress its responses and wire sizes would not compare. Scripts inlined in the HTML are part of the document and not counted. 1 KB is 1024 bytes.",
+  "- JavaScript on first load: the sum of the gzip sizes of each script response body on `/` until the load event, each URL counted once, compressed by the measuring script with zlib for both apps, because the legacy server does not compress its responses and wire sizes would not compare. Scripts inlined in the HTML are part of the document and not counted. The `metrics` artifact lists each script URL with its gzip size. 1 KB is 1024 bytes.",
   "- Backend calls: the API requests the backend counts while a fresh browser loads `/products/lavender-dusk` until the network is idle, server rendering included. The backend's own health and test endpoints are not counted, and the front end health checks load `/cart`, which calls no API.",
-  "- Known vulnerabilities: `npm audit --production` with npm 6 for legacy and `pnpm audit --prod` for the new app, counting critical, high, moderate and low advisories.",
+  "- Known vulnerabilities: the advisories reported by `npm audit --production` with npm 6 for legacy and by `pnpm audit --prod` for the new app, each advisory counted once by severity (critical, high, moderate, low) rather than the per path totals in the audit metadata.",
   "- Mutation score: detected mutants (killed or timed out) over valid mutants (killed, timed out, survived or not covered), to one decimal. Timeouts are listed next to the score because a loaded machine can turn a timeout into a false kill. The shared backend is mutation tested too and is not a column here.",
   "- Legacy mutation testing runs Stryker 5.6.1 on Node 12, with its dependencies resolved as published before 2025-08-01 (which holds `inquirer` at 8.2.6) and `procps` in the mutation image. Refreshing the legacy lockfile with plain npm 6 breaks it.",
   "- Line coverage: `total.lines.pct` from each app's coverage summary, from Karma with Istanbul for legacy and Vitest with V8 for the new app.",
@@ -143,7 +146,7 @@ export function lighthouseScore(
   page: string,
   category: Category,
 ): number {
-  const scores = listOf(manifest).flatMap((run) => {
+  const runs = listOf(manifest).map((run) => {
     if (
       !isRecord(run) ||
       typeof run.url !== "string" ||
@@ -151,9 +154,15 @@ export function lighthouseScore(
     ) {
       unreadable();
     }
-    if (new URL(run.url).pathname !== page) return [];
-    if (!isRecord(run.summary)) unreadable();
-    const score = run.summary[category];
+    return { url: new URL(run.url), summary: run.summary };
+  });
+  if (new Set(runs.map(({ url }) => url.origin)).size > 1) {
+    throw new ReportError("runs from more than one origin");
+  }
+  const scores = runs.flatMap(({ url, summary }) => {
+    if (url.pathname !== page) return [];
+    if (!isRecord(summary)) unreadable();
+    const score = summary[category];
     if (score === null || score === undefined) return [];
     return isFraction(score) ? [score] : unreadable();
   });
@@ -270,6 +279,7 @@ export function buildResults(input: ResultsInput): string {
     "# Results",
     INTRO,
     table(rows(input)),
+    COVERAGE_NOTE,
     ...notes,
     METHOD,
     footer(input.runUrl),
@@ -277,8 +287,22 @@ export function buildResults(input: ResultsInput): string {
 }
 
 export function buildReadmeSection(input: ResultsInput): string {
-  return `${table(rows(input))}\n\n${DETAILS} ${footer(input.runUrl)}`;
+  return `${table(rows(input))}\n\n${COVERAGE_NOTE}\n\n${DETAILS} ${footer(input.runUrl)}`;
 }
+
+const closesFence = (fence: string, line: string): boolean =>
+  new RegExp(`^ {0,3}${fence.charAt(0)}{${String(fence.length)},}\\s*$`).test(
+    line,
+  );
+
+const outsideFences = (lines: readonly string[]): boolean[] => {
+  let fence = "";
+  return lines.map((line) => {
+    if (fence === "") fence = OPENING_FENCE.exec(line)?.[1] ?? "";
+    else if (closesFence(fence, line)) fence = "";
+    return fence === "";
+  });
+};
 
 export function replaceReadmeSection(
   readme: string,
@@ -287,12 +311,16 @@ export function replaceReadmeSection(
 ): string {
   const title = `## ${heading}`;
   const lines = readme.split("\n");
-  const start = lines.findIndex((line) => line.trimEnd() === title);
+  const outside = outsideFences(lines);
+  const start = lines.findIndex(
+    (line, index) => outside[index] === true && line.trimEnd() === title,
+  );
   const end =
     start === -1
       ? -1
       : lines.findIndex(
-          (line, index) => index > start && SECTION_END.test(line),
+          (line, index) =>
+            index > start && outside[index] === true && SECTION_END.test(line),
         );
   const before = start === -1 ? readme : lines.slice(0, start).join("\n");
   const after = end === -1 ? "" : lines.slice(end).join("\n");

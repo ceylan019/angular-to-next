@@ -4,6 +4,7 @@
   "mutate": [
     "traceability/traceability.ts",
     "metrics/audit.ts",
+    "metrics/measurements.ts",
     "results/results.ts"
   ],
   "incremental": false,
