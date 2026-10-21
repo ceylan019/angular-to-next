@@ -6,7 +6,7 @@ This repository moves a small candle shop from a server rendered Angular 10 app 
 
 - **Same behavior.** The shared suite runs against both apps in CI, on x64 and Arm runners. A test that names no known difference must pass on both apps with the same expectations. Every business rule in [requirements.md](./docs/requirements.md) needs a test in each layer it lists, and CI fails when one is missing.
 - **Documented differences.** Every place where the new app behaves differently on purpose is listed in [Known differences](#known-differences), with a shared test that expects the old behavior on legacy and the rule on the new app.
-- **Measurable wins.** Lighthouse scores, JavaScript on first load, backend calls per page view, known vulnerabilities, mutation score and line coverage are measured for both apps in the same CI run. The [Results](#results) table is generated from that run, not typed by hand.
+- **Measurable wins.** Lighthouse scores, JavaScript on first load, backend calls per page view, known vulnerabilities, mutation score and line coverage are measured for both apps in the same CI run. CI writes the [Results](#results) table from that run.
 - **Safe process.** The suite was green on the legacy app before any new code existed. The new app then took over the shop flow by flow, and each flow's shared tests had to pass on both apps before its step merged. The approach is written up in [docs/migration-approach.md](./docs/migration-approach.md).
 
 ## Results
@@ -60,12 +60,12 @@ The legacy app breaks rules from [requirements.md](./docs/requirements.md) in si
 - [KD-03](./docs/known-differences.md#kd-03-a-subtotal-of-exactly-5000-still-pays-shipping): legacy charges shipping on a subtotal of exactly $50.00. The new app ships it free, as the rule says.
 - [KD-04](./docs/known-differences.md#kd-04-the-server-rendered-cart-badge-always-shows-0): legacy keeps the cart in `localStorage`, so its server rendered cart badge always shows 0. The new app renders the real count.
 - [KD-05](./docs/known-differences.md#kd-05-place-order-stays-enabled-while-the-order-is-submitted): legacy keeps Place order enabled while the order is submitted, so a double click places two orders. The new app places one.
-- [KD-06](./docs/known-differences.md#kd-06-the-legacy-cart-caps-edits-by-the-stock-seen-when-the-item-was-added): legacy caps cart edits by the stock seen when the item was added. The new app caps by current stock. Found by the parity review, not planted.
+- [KD-06](./docs/known-differences.md#kd-06-the-legacy-cart-caps-edits-by-the-stock-seen-when-the-item-was-added): legacy caps cart edits by the stock seen when the item was added. The new app caps by current stock.
 
 ### Known limitations
 
 - The confirmation page is addressed by order number, so anyone holding an order number can view that order. Checkout is guest only with fake data, and an order access token is part of the production rollout stage.
-- A failed add to cart during a backend outage shows no message in the new app, because the page copy both apps share has no message for that case.
+- A failed add to cart during a backend outage shows no message in the new app, because the shared page text defines no message for that case.
 - On narrow phones the cart table scrolls sideways inside its card.
 
 ## How to run
@@ -87,6 +87,8 @@ pnpm --filter e2e exec playwright install chromium
 pnpm e2e
 ```
 
+On Linux, add `--with-deps` to the install command so it also installs the system libraries Chromium needs.
+
 `pnpm e2e` starts the stack in test mode (`TEST_MODE=true` turns on the backend's test endpoints), waits until every service is healthy, then runs both Playwright projects. The HTML report is written to `e2e/playwright-report/all`.
 
 If a port is taken, move the apps with `LEGACY_PORT`, `WEB_PORT` and `BACKEND_PORT`, and point the suite at the new ports with `LEGACY_URL`, `WEB_URL` and `BACKEND_URL`:
@@ -101,11 +103,14 @@ pnpm e2e
 
 ## Interview demo
 
+Install Chromium for the suite beforehand, as shown in [How to run](#how-to-run).
+
 1. Start the stack with `pnpm demo:test`. It is the same stack as `pnpm demo`, started in the background with the backend's test endpoints turned on, so step 4 reuses it.
 2. Open http://localhost:4000 and http://localhost:3000 side by side.
 3. Buy the same candle in each. With one Fig & Cassis in the cart, the legacy subtotal is a cent short (KD-01). Check out with card `4242 4242 4242 4242`, any future expiry and any three digit CVC.
 4. Run `pnpm e2e`. It finds the stack already up and runs the shared suite against both apps. Each test starts from a reset database, so the demo orders are cleared.
 5. Open the live reports at https://ceylan019.github.io/angular-to-next/.
+6. Stop the stack with `docker compose down`.
 
 ## Reports
 
@@ -146,7 +151,7 @@ Each step landed as its own pull request, in this order:
 2. Shared backend: the API, the database schema, the seed catalog and the generated product images.
 3. Legacy Angular 10 shop, with its planted defects and its unit tests.
 4. Shared parity suite, proven green on the legacy app, with the requirements, the known differences register and the traceability gate.
-5. Rewrite browse: the product list and detail pages, enabled in the shared suite.
+5. Rewrite browse, with the shell flow: the header and layout, the product list and the detail pages, enabled in the shared suite.
 6. Rewrite cart, enabled in the shared suite. Its parity review found KD-06.
 7. Rewrite checkout and the order confirmation, enabled in the shared suite.
 8. Old versus new results: Lighthouse, metrics, the generated results, the side by side recording and the reports site.

@@ -2,7 +2,7 @@
 
 How the shop moved from Angular 10 to Next.js 16 without a big bang release, and why each step carried little risk. The legacy app here is a purpose-built stand-in, but nothing in the approach depends on that: it is the same sequence a real legacy app would go through.
 
-In short: write down what the legacy app does, prove it with tests that do not care which app they run against, then replace the app one flow at a time while those tests keep running against both. Every intended difference is recorded and tested. Any other change in behavior is a regression, and it fails the build.
+In short: write down what the legacy app does, prove it with tests that do not care which app they run against, then replace the app flow by flow while those tests keep running against both. Every intended difference is recorded and tested. Any other change in behavior is a regression, and it fails the build.
 
 ## 1. Characterize the legacy app first
 
@@ -15,7 +15,7 @@ Before any Next.js code existed:
 
 A suite that passes on the legacy app describes what the legacy app does today, defects included. That is the baseline the rewrite has to meet.
 
-## 2. Enable the new app one flow at a time
+## 2. Enable the new app flow by flow
 
 - Every shared spec file has a top level `test.describe`, and every top level title carries exactly one flow tag: `@shell`, `@browse`, `@cart` or `@checkout`. The traceability check fails a spec file that breaks either rule.
 - `ENABLED_NEXT_FLOWS` in [`e2e/support/flows.ts`](../e2e/support/flows.ts) lists the flows the new app has taken over. [`e2e/playwright.config.ts`](../e2e/playwright.config.ts) turns that list into a `grep` for the `next` project. The `legacy` project always runs every test.
@@ -51,20 +51,20 @@ Coverage shows that code ran during a test. It does not show that a test would n
 - The backend's core modules, the new app's feature and library modules, and the scripts behind traceability, metrics, results and the reports site fail CI when their mutation score drops below 90. The thresholds are in [`backend/stryker.config.json`](../backend/stryker.config.json), [`web/stryker.config.json`](../web/stryker.config.json) and [`scripts/stryker.config.json`](../scripts/stryker.config.json).
 - The legacy app is mutation tested too, as a report without a threshold ([`legacy/stryker.conf.json`](../legacy/stryker.conf.json)). Its score sits next to the new app's in the results table.
 
-## 6. Results are measured, not written
+## 6. Results come from CI
 
-The `results` job in CI collects the Lighthouse, metrics, audit, mutation and coverage reports of one run, and `pnpm results` ([`scripts/results`](../scripts/results)) writes the results table in the README from them. Each pair measured on a running stack is measured for both apps on the same runner. A missing report shows as n/a with the reason, never as a number typed by hand.
+The `results` job in CI collects the Lighthouse, metrics, audit, mutation and coverage reports of one run, and `pnpm results` ([`scripts/results`](../scripts/results)) writes the results table in the README from them. Each pair measured on a running stack is measured for both apps on the same runner. A missing report shows as n/a with the reason, so every number in the table traces back to a report.
 
 ## Why each step was low risk
 
-| Step                                      | What changed                                                      | Why the risk was low                                                                                                                                                                                                                                |
-| ----------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. Repository skeleton                    | Workspace, Docker Compose and CI                                  | No behavior.                                                                                                                                                                                                                                        |
-| 2. Shared backend                         | One API and one database for both front ends                      | Both apps rely on the same server side rules, so the rewrite never changed how the backend prices orders, checks stock or takes payment. API tests run against a real PostgreSQL in a container. The backend's code did not change after this step. |
-| 3. Legacy shop                            | The stand-in for the app being replaced                           | Its unit tests pin its behavior, planted defects included. Its application code did not change after this step.                                                                                                                                     |
-| 4. Shared suite, proven on legacy         | Tests and documentation only                                      | No application code changed. A green run proves the suite describes the legacy app as it is.                                                                                                                                                        |
-| 5 to 7. Rewrite browse, cart and checkout | One flow of the new app per step, plus its entry in the flow list | A small surface per pull request. Each flow's shared tests must pass on both apps, and its rules need web unit tests before traceability passes. Any change that is not a recorded known difference fails the build.                                |
-| 8. Old versus new results                 | Measurement, reporting and documentation                          | Tooling around the apps. The new app's changes in this step (a site icon, and client bundle refactors that keep its behavior) went through the same suite and gates.                                                                                |
+| Step                                      | What changed                                                      | Why the risk was low                                                                                                                                                                                                                                                      |
+| ----------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Repository skeleton                    | Workspace, Docker Compose and CI                                  | No behavior.                                                                                                                                                                                                                                                              |
+| 2. Shared backend                         | One API and one database for both front ends                      | Both apps rely on the same server side rules, so the rewrite never changed how the backend prices orders, checks stock or takes payment. API tests run against a real PostgreSQL in a container. The backend's code did not change after this step.                       |
+| 3. Legacy shop                            | The stand-in for the app being replaced                           | Its unit tests pin its behavior, planted defects included. Its application code did not change after this step.                                                                                                                                                           |
+| 4. Shared suite, proven on legacy         | Tests and documentation only                                      | No application code changed. A green run proves the suite describes the legacy app as it is.                                                                                                                                                                              |
+| 5 to 7. Rewrite browse, cart and checkout | One part of the new app per step, plus its flows in the flow list | A small surface per pull request. Each flow's shared tests must pass on both apps, and its rules need web unit tests before traceability passes. Any change that is not a recorded known difference fails the build.                                                      |
+| 8. Old versus new results                 | Measurement, reporting and documentation                          | Tooling around the apps. The new app's changes in this step, for example a site icon, wrapping for long names and addresses on the confirmation page, and client bundle refactors of the error page and the product list controls, went through the same suite and gates. |
 
 At every step the legacy app was whole and served every flow. Stopping the migration at any point would have left a working shop, and the way back was always the app that was already running.
 
