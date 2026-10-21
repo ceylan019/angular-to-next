@@ -135,7 +135,9 @@ test.describe("product detail @browse", () => {
     const card = page
       .getByRole("list", { name: COPY.list.products })
       .getByRole("listitem")
-      .filter({ has: page.getByRole("heading", { name: product.name }) });
+      .filter({
+        has: page.getByRole("heading", { name: product.name, exact: true }),
+      });
     await expect(
       card.getByText(COPY.stock(product.stock), { exact: true }),
     ).toBeVisible();

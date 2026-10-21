@@ -10,6 +10,7 @@ import { expect, test } from "../../support/fixtures.js";
 import { usd } from "../../support/money.js";
 
 const PAGE_SIZE = 12;
+const [FLORAL, WOODY, FRESH, , , HERBAL] = COPY.list.families.options;
 
 function names(products: readonly { name: string }[]): string[] {
   return products.map((product) => product.name);
@@ -74,7 +75,7 @@ test.describe("product list @browse", () => {
 
     const lowStock = bySlug("ember-clove");
     const card = cards(page).filter({
-      has: page.getByRole("heading", { name: lowStock.name }),
+      has: page.getByRole("heading", { name: lowStock.name, exact: true }),
     });
     await expect(
       card.getByText(COPY.stock(lowStock.stock), { exact: true }),
@@ -131,7 +132,7 @@ test.describe("product list @browse", () => {
   test("[BR-B3] keeps the sort when a filter changes", async ({ page }) => {
     await page.goto("/?sort=price-desc");
 
-    await family(page, "Floral").check();
+    await family(page, FLORAL).check();
 
     await expect(page).toHaveURL("/?family=floral&sort=price-desc");
     await expect(cardNames(page)).toHaveText(
@@ -149,10 +150,10 @@ test.describe("product list @browse", () => {
   }) => {
     await page.goto("/?page=2");
 
-    await family(page, "Floral").check();
+    await family(page, FLORAL).check();
     await expect(page).toHaveURL("/?family=floral");
 
-    await family(page, "Woody").check();
+    await family(page, WOODY).check();
     await expect(page).toHaveURL("/?family=floral&family=woody");
 
     const matching = sortedByName(
@@ -164,9 +165,9 @@ test.describe("product list @browse", () => {
     await expect(cardNames(page)).toHaveText(
       names(matching.slice(0, PAGE_SIZE)),
     );
-    await expect(family(page, "Floral")).toBeChecked();
-    await expect(family(page, "Woody")).toBeChecked();
-    await expect(family(page, "Fresh")).not.toBeChecked();
+    await expect(family(page, FLORAL)).toBeChecked();
+    await expect(family(page, WOODY)).toBeChecked();
+    await expect(family(page, FRESH)).not.toBeChecked();
     await expect(
       pagination(page).getByRole("link", { name: "1", exact: true }),
     ).toBeVisible();
@@ -180,8 +181,8 @@ test.describe("product list @browse", () => {
   }) => {
     await page.goto("/");
 
-    await family(page, "Woody").check();
-    await family(page, "Floral").check();
+    await family(page, WOODY).check();
+    await family(page, FLORAL).check();
 
     await expect(page).toHaveURL("/?family=floral&family=woody");
   });
@@ -191,7 +192,7 @@ test.describe("product list @browse", () => {
   }) => {
     await page.goto("/?family=floral");
 
-    await family(page, "Floral").uncheck();
+    await family(page, FLORAL).uncheck();
 
     await expect(page).toHaveURL("/");
     await expect(cards(page)).toHaveCount(PAGE_SIZE);
@@ -280,7 +281,11 @@ test.describe("product list @browse", () => {
     await expect(page).toHaveURL(
       "/?family=floral&family=woody&sort=price-asc&page=2",
     );
-    await expect(cards(page)).toHaveCount(1);
+    await expect(cards(page)).toHaveCount(
+      CATALOG.filter(
+        (product) => product.family === "floral" || product.family === "woody",
+      ).length - PAGE_SIZE,
+    );
   });
 
   test("[BR-B4] shows no pagination when everything fits on one page", async ({
@@ -332,7 +337,7 @@ test.describe("product list @browse", () => {
 
     await expect(cardNames(page)).toHaveText(names(floralByName()));
     for (const label of COPY.list.families.options) {
-      if (label === "Floral") {
+      if (label === FLORAL) {
         await expect(family(page, label)).toBeChecked();
       } else {
         await expect(family(page, label)).not.toBeChecked();
@@ -371,12 +376,12 @@ test.describe("product list @browse", () => {
       page.getByRole("list", { name: COPY.list.products }),
     ).toHaveCount(0);
     await expect(pagination(page)).toHaveCount(0);
-    await expect(family(page, "Herbal")).toBeChecked();
+    await expect(family(page, HERBAL)).toBeChecked();
 
     await page.getByRole("link", { name: COPY.list.clearFilters }).click();
 
     await expect(page).toHaveURL("/");
     await expect(cards(page)).toHaveCount(PAGE_SIZE);
-    await expect(family(page, "Herbal")).not.toBeChecked();
+    await expect(family(page, HERBAL)).not.toBeChecked();
   });
 });
