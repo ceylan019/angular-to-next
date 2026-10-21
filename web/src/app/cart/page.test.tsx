@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { updateQuantity } from "@/features/cart/cart-actions";
-import type { CartLine } from "@/features/cart/cart-cookie";
+import { parseCartCookie, type CartLine } from "@/features/cart/cart-cookie";
 import { readCart } from "@/features/cart/cart-store";
 import { getProduct } from "@/lib/backend/client";
 import {
@@ -165,6 +165,31 @@ describe("cart page", () => {
 
     expect(screen.getAllByRole("row")).toHaveLength(2);
     expect(definitions()).toEqual(["$32.30", "$5.95", "$38.25"]);
+  });
+
+  it("drops a cookie line with a tampered price and still renders the cart", async () => {
+    const cookie = JSON.stringify([
+      { ...lavenderLine, quantity: 10, unitPriceCents: 9007199254740991 },
+      orangeLine,
+    ]);
+    vi.mocked(readCart).mockImplementation(() =>
+      Promise.resolve(parseCartCookie(cookie)),
+    );
+
+    render(await CartPage());
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Your cart" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(
+      screen.queryByRole("spinbutton", { name: "Quantity for Lavender Dusk" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("spinbutton", { name: "Quantity for Orange Grove" }),
+    ).toHaveValue(1);
+    expect(definitions()).toEqual(["$22.00", "$5.95", "$27.95"]);
+    expect(getProduct).not.toHaveBeenCalledWith("lavender-dusk");
   });
 
   it("[BR-C2] takes the cap from the fresh product", async () => {
