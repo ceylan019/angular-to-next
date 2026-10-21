@@ -14,5 +14,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["traceability", "*.ts", "*.mjs"]
+  "include": ["traceability", "metrics", "results", "*.ts", "*.mjs"]
 }
