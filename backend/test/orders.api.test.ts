@@ -213,6 +213,15 @@ describe("orders api", () => {
     expect((res.body as { error: string }).error).toBe("VALIDATION");
   });
 
+  it("[BR-K2] rejects malformed JSON", async () => {
+    const res = await request(testApp.app)
+      .post("/api/orders")
+      .set("Content-Type", "application/json")
+      .send("{not json");
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: "VALIDATION", fields: [] });
+  });
+
   it("[BR-K2] rejects a missing body", async () => {
     const res = await request(testApp.app).post("/api/orders");
     expect(res.status).toBe(400);
