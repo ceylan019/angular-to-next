@@ -17,7 +17,7 @@ describe('ApiUrlInterceptor', () => {
   let http: HttpClient;
   let httpMock: HttpTestingController;
 
-  function setup(platformId: string, providers: any[] = []) {
+  function setup(platformId: string, providers: any[] = []): void {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
@@ -49,6 +49,7 @@ describe('ApiUrlInterceptor', () => {
       http.get('/api/products').subscribe();
 
       const req = httpMock.expectOne('http://backend:8080/api/products');
+      expect(req.request.url).toBe('http://backend:8080/api/products');
       expect(req.request.method).toBe('GET');
       req.flush({});
     });
@@ -61,11 +62,11 @@ describe('ApiUrlInterceptor', () => {
       http.get('/api/products', { params }).subscribe();
       http.post('/api/orders', { lines: [] }).subscribe();
 
-      httpMock
-        .expectOne(
-          'http://backend:8080/api/products?family=floral&family=woody&page=2',
-        )
-        .flush({});
+      const get = httpMock.expectOne(
+        'http://backend:8080/api/products?family=floral&family=woody&page=2',
+      );
+      expect(get.request.params.getAll('family')).toEqual(['floral', 'woody']);
+      get.flush({});
       const post = httpMock.expectOne('http://backend:8080/api/orders');
       expect(post.request.method).toBe('POST');
       expect(post.request.body).toEqual({ lines: [] });
@@ -81,7 +82,11 @@ describe('ApiUrlInterceptor', () => {
       ];
       urls.forEach((url) => http.get(url).subscribe());
 
-      urls.forEach((url) => httpMock.expectOne(url).flush({}));
+      urls.forEach((url) => {
+        const req = httpMock.expectOne(url);
+        expect(req.request.url).toBe(url);
+        req.flush({});
+      });
     });
   });
 
@@ -92,14 +97,18 @@ describe('ApiUrlInterceptor', () => {
       ]);
       http.get('/api/products').subscribe();
 
-      httpMock.expectOne('/api/products').flush({});
+      const req = httpMock.expectOne('/api/products');
+      expect(req.request.url).toBe('/api/products');
+      req.flush({});
     });
 
     it('needs no backend url in the browser', () => {
       setup('browser');
       http.get('/api/families').subscribe();
 
-      httpMock.expectOne('/api/families').flush([]);
+      const req = httpMock.expectOne('/api/families');
+      expect(req.request.url).toBe('/api/families');
+      req.flush([]);
     });
   });
 });
