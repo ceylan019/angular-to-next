@@ -46,7 +46,7 @@ describe("layoutSite", () => {
     put(artifacts, "lighthouse-next/p.report.html", "lh");
     const out = join(root, "site");
 
-    layoutSite(artifacts, out, REPO);
+    layoutSite(artifacts, out, REPO, root);
 
     expect(read(out, "playwright/legacy-ubuntu-24.04/index.html")).toBe("pw");
     expect(read(out, "playwright/legacy-ubuntu-24.04/data/trace.zip")).toBe(
@@ -73,7 +73,7 @@ describe("layoutSite", () => {
     put(artifacts, "mutation-backend/index.html", "mb");
     const out = join(root, "site");
 
-    const { missing } = layoutSite(artifacts, out, REPO);
+    const { missing } = layoutSite(artifacts, out, REPO, root);
 
     expect(missing).toContain("mutation-web");
     expect(missing).not.toContain("mutation-backend");
@@ -90,7 +90,7 @@ describe("layoutSite", () => {
     const root = scratch();
     const out = join(root, "site");
 
-    const { missing } = layoutSite(join(root, "none"), out, REPO);
+    const { missing } = layoutSite(join(root, "none"), out, REPO, root);
 
     expect(missing).toHaveLength(11);
     const index = read(out, "index.html");
@@ -106,7 +106,7 @@ describe("layoutSite", () => {
     put(artifacts, "lighthouse-legacy/a.report.html", "x");
     const out = join(root, "site");
 
-    layoutSite(artifacts, out, REPO);
+    layoutSite(artifacts, out, REPO, root);
 
     expect(read(out, "index.html")).toContain(
       '<li class="missing">Legacy Angular app: not available in this run</li>',
@@ -118,9 +118,131 @@ describe("layoutSite", () => {
     const out = join(root, "site");
     put(out, "stale/old.html", "old");
 
-    layoutSite(join(root, "none"), out, REPO);
+    layoutSite(join(root, "none"), out, REPO, root);
 
     expect(existsSync(join(out, "stale"))).toBe(false);
     expect(existsSync(join(out, "index.html"))).toBe(true);
+  });
+});
+
+type Repo = { root: string; workdir: string; artifacts: string };
+
+const repo = (artifactsPath = "artifacts"): Repo => {
+  const root = scratch();
+  const workdir = join(root, "home", "repo");
+  const artifacts = join(workdir, artifactsPath);
+  put(workdir, "package.json", "{}");
+  put(artifacts, "mutation-backend/index.html", "mb");
+  return { root, workdir, artifacts };
+};
+
+const expectUntouched = ({ workdir, artifacts }: Repo): void => {
+  expect(read(workdir, "package.json")).toBe("{}");
+  expect(read(artifacts, "mutation-backend/index.html")).toBe("mb");
+};
+
+describe("layoutSite output folder guard", () => {
+  it("refuses the working directory itself", () => {
+    const folders = repo();
+    const { workdir, artifacts } = folders;
+
+    for (const out of [workdir, `${workdir}/`, `${workdir}/site/..`]) {
+      expect(() => layoutSite(artifacts, out, REPO, workdir)).toThrow(
+        `Refusing to replace ${workdir}: it is the working directory.`,
+      );
+    }
+    expectUntouched(folders);
+    expect(existsSync(join(workdir, "index.html"))).toBe(false);
+  });
+
+  it("refuses a folder that holds the working directory", () => {
+    const folders = repo();
+    const { root, workdir, artifacts } = folders;
+
+    for (const out of [join(root, "home"), root]) {
+      expect(() => layoutSite(artifacts, out, REPO, workdir)).toThrow(
+        `Refusing to replace ${out}: it holds the working directory.`,
+      );
+    }
+    expectUntouched(folders);
+    expect(existsSync(join(root, "index.html"))).toBe(false);
+  });
+
+  it("refuses the artifacts folder", () => {
+    const folders = repo();
+    const { workdir, artifacts } = folders;
+
+    expect(() => layoutSite(artifacts, artifacts, REPO, workdir)).toThrow(
+      `Refusing to replace ${artifacts}: it is the artifacts folder.`,
+    );
+    expectUntouched(folders);
+    expect(existsSync(join(artifacts, "index.html"))).toBe(false);
+  });
+
+  it("refuses a folder that holds the artifacts folder", () => {
+    const folders = repo("ci/run/artifacts");
+    const { workdir, artifacts } = folders;
+
+    for (const out of [join(workdir, "ci"), join(workdir, "ci", "run")]) {
+      expect(() => layoutSite(artifacts, out, REPO, workdir)).toThrow(
+        `Refusing to replace ${out}: it holds the artifacts folder.`,
+      );
+    }
+    expectUntouched(folders);
+    expect(existsSync(join(workdir, "ci", "index.html"))).toBe(false);
+  });
+
+  it("refuses a folder outside the working directory", () => {
+    const folders = repo();
+    const { root, workdir, artifacts } = folders;
+    const elsewhere = join(root, "elsewhere");
+    const sibling = join(root, "home", "repo-site");
+    put(elsewhere, "keep.txt", "keep");
+    put(sibling, "keep.txt", "keep");
+
+    for (const out of [elsewhere, sibling]) {
+      expect(() => layoutSite(artifacts, out, REPO, workdir)).toThrow(
+        `Refusing to replace ${out}: it is outside the working directory.`,
+      );
+      expect(read(out, "keep.txt")).toBe("keep");
+      expect(existsSync(join(out, "index.html"))).toBe(false);
+    }
+    expectUntouched(folders);
+  });
+
+  it("accepts a folder inside the working directory that does not hold the artifacts folder", () => {
+    const folders = repo();
+    const { workdir, artifacts } = folders;
+    const accepted = [
+      [join(workdir, "site"), join(workdir, "site")],
+      [join(workdir, "reports", "site"), join(workdir, "reports", "site")],
+      [join(workdir, "..site"), join(workdir, "..site")],
+      [join(workdir, "art"), join(workdir, "art")],
+      [join(workdir, "artifacts-site"), join(workdir, "artifacts-site")],
+      [`${workdir}/artifacts/../built`, join(workdir, "built")],
+    ] as const;
+
+    for (const [out, written] of accepted) {
+      layoutSite(artifacts, out, REPO, workdir);
+
+      expect(read(written, "mutation/backend/index.html")).toBe("mb");
+      expect(read(written, "index.html")).toContain(`<a href="${REPO}">`);
+    }
+    expectUntouched(folders);
+  });
+
+  it("resolves relative folders against the working directory", () => {
+    const folders = repo();
+    const { workdir } = folders;
+
+    layoutSite("artifacts", "public/site", REPO, workdir);
+
+    const written = join(workdir, "public", "site");
+    expect(read(written, "mutation/backend/index.html")).toBe("mb");
+    expect(read(written, "index.html")).toContain(`<a href="${REPO}">`);
+    expect(() => layoutSite("artifacts", "artifacts", REPO, workdir)).toThrow(
+      `Refusing to replace ${join(workdir, "artifacts")}: it is the artifacts folder.`,
+    );
+    expectUntouched(folders);
   });
 });
