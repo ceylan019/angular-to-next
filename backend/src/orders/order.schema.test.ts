@@ -130,6 +130,26 @@ describe("placeOrderSchema", () => {
     ]);
   });
 
+  it("[BR-K2] rejects a very long dotted email quickly", () => {
+    const hostile = `a@${"x.".repeat(50000)}@`;
+    const body = mutate((b) => (b.contact.email = hostile));
+    const start = performance.now();
+    const messages = messagesOf(body);
+    const elapsed = performance.now() - start;
+    expect(messages).toEqual(["Enter a valid email address"]);
+    expect(elapsed).toBeLessThan(50);
+  });
+
+  it("[BR-K2] trims the country", () => {
+    const body = mutate((b) => (b.shipping.country = " US "));
+    const result = schema.safeParse(body);
+    expect(result.success).toBe(true);
+    expect(result.data?.shipping.country).toBe("US");
+    expect(pathsOf(mutate((b) => (b.shipping.country = "  ")))).toEqual([
+      "shipping.country",
+    ]);
+  });
+
   it("[BR-K2] full name rules", () => {
     const at = (v: unknown) =>
       mutate((b) => ((b.shipping as { fullName: unknown }).fullName = v));
