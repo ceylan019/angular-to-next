@@ -1,0 +1,293 @@
+<h1>Checkout</h1>
+<div role="alert" class="text-danger mb-3">{{ alert }}</div>
+<div class="row">
+  <div class="col-md-8 mb-4">
+    <form #checkoutForm="ngForm" (ngSubmit)="placeOrder(checkoutForm)">
+      <fieldset class="mb-4">
+        <legend>Contact</legend>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            class="form-control"
+            [(ngModel)]="model.email"
+            #email="ngModel"
+            appCheckoutField="email"
+            [class.is-invalid]="showError(email)"
+            [attr.aria-invalid]="showError(email) ? 'true' : null"
+            [attr.aria-describedby]="showError(email) ? 'email-error' : null"
+          />
+          <div
+            id="email-error"
+            class="invalid-feedback"
+            *ngIf="showError(email)"
+          >
+            {{ email.errors?.checkout }}
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="mb-4">
+        <legend>Shipping address</legend>
+        <div class="form-group">
+          <label for="fullName">Full name</label>
+          <input
+            id="fullName"
+            name="fullName"
+            type="text"
+            autocomplete="name"
+            class="form-control"
+            [(ngModel)]="model.fullName"
+            #fullName="ngModel"
+            appCheckoutField="fullName"
+            [class.is-invalid]="showError(fullName)"
+            [attr.aria-invalid]="showError(fullName) ? 'true' : null"
+            [attr.aria-describedby]="
+              showError(fullName) ? 'fullName-error' : null
+            "
+          />
+          <div
+            id="fullName-error"
+            class="invalid-feedback"
+            *ngIf="showError(fullName)"
+          >
+            {{ fullName.errors?.checkout }}
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="line1">Address line 1</label>
+          <input
+            id="line1"
+            name="line1"
+            type="text"
+            autocomplete="address-line1"
+            class="form-control"
+            [(ngModel)]="model.line1"
+            #line1="ngModel"
+            appCheckoutField="line1"
+            [class.is-invalid]="showError(line1)"
+            [attr.aria-invalid]="showError(line1) ? 'true' : null"
+            [attr.aria-describedby]="showError(line1) ? 'line1-error' : null"
+          />
+          <div
+            id="line1-error"
+            class="invalid-feedback"
+            *ngIf="showError(line1)"
+          >
+            {{ line1.errors?.checkout }}
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="line2">Address line 2 (optional)</label>
+          <input
+            id="line2"
+            name="line2"
+            type="text"
+            autocomplete="address-line2"
+            class="form-control"
+            [(ngModel)]="model.line2"
+            #line2="ngModel"
+            appCheckoutField="line2"
+            [class.is-invalid]="showError(line2)"
+            [attr.aria-invalid]="showError(line2) ? 'true' : null"
+            [attr.aria-describedby]="showError(line2) ? 'line2-error' : null"
+          />
+          <div
+            id="line2-error"
+            class="invalid-feedback"
+            *ngIf="showError(line2)"
+          >
+            {{ line2.errors?.checkout }}
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="city">City</label>
+            <input
+              id="city"
+              name="city"
+              type="text"
+              autocomplete="address-level2"
+              class="form-control"
+              [(ngModel)]="model.city"
+              #city="ngModel"
+              appCheckoutField="city"
+              [class.is-invalid]="showError(city)"
+              [attr.aria-invalid]="showError(city) ? 'true' : null"
+              [attr.aria-describedby]="showError(city) ? 'city-error' : null"
+            />
+            <div
+              id="city-error"
+              class="invalid-feedback"
+              *ngIf="showError(city)"
+            >
+              {{ city.errors?.checkout }}
+            </div>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="postalCode">Postal code</label>
+            <input
+              id="postalCode"
+              name="postalCode"
+              type="text"
+              autocomplete="postal-code"
+              class="form-control"
+              [(ngModel)]="model.postalCode"
+              #postalCode="ngModel"
+              appCheckoutField="postalCode"
+              [class.is-invalid]="showError(postalCode)"
+              [attr.aria-invalid]="showError(postalCode) ? 'true' : null"
+              [attr.aria-describedby]="
+                showError(postalCode) ? 'postalCode-error' : null
+              "
+            />
+            <div
+              id="postalCode-error"
+              class="invalid-feedback"
+              *ngIf="showError(postalCode)"
+            >
+              {{ postalCode.errors?.checkout }}
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="country">Country</label>
+          <select
+            id="country"
+            name="country"
+            autocomplete="country"
+            class="form-control"
+            [(ngModel)]="model.country"
+            #country="ngModel"
+            appCheckoutField="country"
+            [class.is-invalid]="showError(country)"
+            [attr.aria-invalid]="showError(country) ? 'true' : null"
+            [attr.aria-describedby]="
+              showError(country) ? 'country-error' : null
+            "
+          >
+            <option value="">Select a country</option>
+            <option *ngFor="let c of countries" [value]="c.code">
+              {{ c.name }}
+            </option>
+          </select>
+          <div
+            id="country-error"
+            class="invalid-feedback"
+            *ngIf="showError(country)"
+          >
+            {{ country.errors?.checkout }}
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="mb-4">
+        <legend>Payment</legend>
+        <div class="form-group">
+          <label for="cardNumber">Card number</label>
+          <input
+            id="cardNumber"
+            name="cardNumber"
+            type="text"
+            inputmode="numeric"
+            autocomplete="cc-number"
+            class="form-control"
+            [(ngModel)]="model.cardNumber"
+            #cardNumber="ngModel"
+            appCheckoutField="cardNumber"
+            [class.is-invalid]="showError(cardNumber)"
+            [attr.aria-invalid]="showError(cardNumber) ? 'true' : null"
+            [attr.aria-describedby]="
+              showError(cardNumber) ? 'cardNumber-error' : null
+            "
+          />
+          <div
+            id="cardNumber-error"
+            class="invalid-feedback"
+            *ngIf="showError(cardNumber)"
+          >
+            {{ cardNumber.errors?.checkout }}
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="expiry">Expiry (MM/YY)</label>
+            <input
+              id="expiry"
+              name="expiry"
+              type="text"
+              autocomplete="cc-exp"
+              class="form-control"
+              [(ngModel)]="model.expiry"
+              #expiry="ngModel"
+              appCheckoutField="expiry"
+              [class.is-invalid]="showError(expiry)"
+              [attr.aria-invalid]="showError(expiry) ? 'true' : null"
+              [attr.aria-describedby]="
+                showError(expiry) ? 'expiry-error' : null
+              "
+            />
+            <div
+              id="expiry-error"
+              class="invalid-feedback"
+              *ngIf="showError(expiry)"
+            >
+              {{ expiry.errors?.checkout }}
+            </div>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="cvc">CVC</label>
+            <input
+              id="cvc"
+              name="cvc"
+              type="text"
+              inputmode="numeric"
+              autocomplete="cc-csc"
+              class="form-control"
+              [(ngModel)]="model.cvc"
+              #cvc="ngModel"
+              appCheckoutField="cvc"
+              [class.is-invalid]="showError(cvc)"
+              [attr.aria-invalid]="showError(cvc) ? 'true' : null"
+              [attr.aria-describedby]="showError(cvc) ? 'cvc-error' : null"
+            />
+            <div id="cvc-error" class="invalid-feedback" *ngIf="showError(cvc)">
+              {{ cvc.errors?.checkout }}
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <button type="submit" class="btn btn-primary btn-lg">Place order</button>
+    </form>
+  </div>
+  <aside class="col-md-4" aria-label="Order summary">
+    <ul class="list-unstyled">
+      <li
+        *ngFor="let item of items"
+        class="d-flex justify-content-between mb-2"
+      >
+        <span>{{ item.product.name }} × {{ item.quantity }}</span>
+        <span>{{
+          (item.product.priceCents / 100) * item.quantity | currency
+        }}</span>
+      </li>
+    </ul>
+    <dl>
+      <dt>Subtotal</dt>
+      <dd>{{ shop.getSubtotal() | currency }}</dd>
+      <dt>Shipping</dt>
+      <dd>
+        {{
+          calcShipping(shop.getSubtotal()) === 0
+            ? 'Free'
+            : (calcShipping(shop.getSubtotal()) | currency)
+        }}
+      </dd>
+      <dt>Total</dt>
+      <dd>
+        {{ shop.getSubtotal() + calcShipping(shop.getSubtotal()) | currency }}
+      </dd>
+    </dl>
+  </aside>
+</div>

@@ -11,6 +11,9 @@ import { ProductListComponent } from './product-list/product-list.component';
 import { ProductDetailComponent } from './product-detail/product-detail.component';
 import { CartComponent } from './cart/cart.component';
 import { HeaderComponent } from './header/header.component';
+import { CheckoutComponent } from './checkout/checkout.component';
+import { CheckoutFieldValidatorDirective } from './checkout/checkout-validators';
+import { OrderConfirmationComponent } from './order-confirmation/order-confirmation.component';
 
 @NgModule({
   declarations: [
@@ -20,6 +23,9 @@ import { HeaderComponent } from './header/header.component';
     ProductListComponent,
     ProductDetailComponent,
     CartComponent,
+    CheckoutComponent,
+    CheckoutFieldValidatorDirective,
+    OrderConfirmationComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'serverApp' }),
