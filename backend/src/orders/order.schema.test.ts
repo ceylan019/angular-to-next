@@ -302,7 +302,7 @@ describe("placeOrderSchema", () => {
     expect(pathsOf(at("000"))).toBeNull();
   });
 
-  it("[BR-K2] lines rules", () => {
+  it("[BR-K1] [BR-K2] lines rules", () => {
     const at = (v: unknown) =>
       mutate((b) => ((b as { lines: unknown }).lines = v));
     expect(pathsOf(at([]))).toEqual(["lines"]);
@@ -311,7 +311,7 @@ describe("placeOrderSchema", () => {
     expect(pathsOf(at([null]))).toEqual(["lines.0"]);
   });
 
-  it("[BR-K2] quantity rules", () => {
+  it("[BR-C2] [BR-K2] quantity rules", () => {
     const at = (q: unknown) =>
       mutate((b) => ((b.lines[0] as { quantity: unknown }).quantity = q));
     for (const q of [0, 11, 1.5, -1, "1", null, Number.NaN, 999]) {
