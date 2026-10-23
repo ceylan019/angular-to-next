@@ -2,31 +2,40 @@
 
 import {
   createContext,
+  startTransition,
   use,
   useActionState,
+  useCallback,
   useState,
   type ReactNode,
 } from "react";
-import type { CartActionState } from "@/features/cart/cart-actions";
+import type {
+  CartActionState,
+  QuantityChange,
+} from "@/features/cart/cart-actions";
 
 type CartAction = (
   state: CartActionState,
   formData: FormData,
 ) => Promise<CartActionState>;
 
-type StatusContextValue = {
-  state: CartActionState;
-  formAction: (formData: FormData) => void;
-};
+type QuantityAction = (change: QuantityChange) => Promise<CartActionState>;
 
 const IDLE: CartActionState = { status: "idle" };
 
-const StatusContext = createContext<StatusContextValue | null>(null);
+const StatusContext = createContext<CartActionState | null>(null);
 
-function useStatusContext(): StatusContextValue {
-  const value = use(StatusContext);
+const FormActionContext = createContext<((formData: FormData) => void) | null>(
+  null,
+);
+
+const QuantityActionContext = createContext<
+  ((change: QuantityChange) => void) | null
+>(null);
+
+function provided<Value>(value: Value | null, provider: string): Value {
   if (value === null) {
-    throw new Error("Cart status needs a StatusRegionProvider above it");
+    throw new Error(`Cart status needs a ${provider} above it`);
   }
   return value;
 }
@@ -40,20 +49,52 @@ export function StatusRegionProvider({
 }) {
   const [state, formAction] = useActionState(action, IDLE);
   return (
-    <StatusContext value={{ state, formAction }}>{children}</StatusContext>
+    <StatusContext value={state}>
+      <FormActionContext value={formAction}>{children}</FormActionContext>
+    </StatusContext>
+  );
+}
+
+export function CartQuantityProvider({
+  action,
+  children,
+}: {
+  action: QuantityAction;
+  children: ReactNode;
+}) {
+  const [state, dispatch] = useActionState(
+    (_state: CartActionState, change: QuantityChange) => action(change),
+    IDLE,
+  );
+  const commit = useCallback(
+    (change: QuantityChange) => {
+      startTransition(() => {
+        dispatch(change);
+      });
+    },
+    [dispatch],
+  );
+  return (
+    <StatusContext value={state}>
+      <QuantityActionContext value={commit}>{children}</QuantityActionContext>
+    </StatusContext>
   );
 }
 
 export function useCartFormAction(): (formData: FormData) => void {
-  return useStatusContext().formAction;
+  return provided(use(FormActionContext), "StatusRegionProvider");
+}
+
+export function useCartQuantityAction(): (change: QuantityChange) => void {
+  return provided(use(QuantityActionContext), "CartQuantityProvider");
 }
 
 export function useCartActionState(): CartActionState {
-  return useStatusContext().state;
+  return provided(use(StatusContext), "StatusRegionProvider");
 }
 
 export function StatusRegion() {
-  const { state } = useStatusContext();
+  const state = useCartActionState();
   const [shown, setShown] = useState(state);
   const [version, setVersion] = useState(0);
   if (shown !== state) {

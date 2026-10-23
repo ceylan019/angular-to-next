@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { setProduct } from "../../support/backend.js";
 import { bySlug } from "../../support/catalog.js";
 import { addFromDetail, addFromList, cartBadge } from "../../support/cart.js";
 import { COPY } from "../../support/copy.js";
@@ -190,6 +191,31 @@ test.describe("cart @cart", () => {
       COPY.cart.cap(product.stock, product.name),
     );
     await expectBadge(page, product.stock);
+  });
+
+  test("[BR-C2] [KD-06] the cart caps edits by current stock", async ({
+    page,
+  }) => {
+    const product = bySlug("lavender-dusk");
+    const stock = 3;
+    await addFromDetail(page, product.slug, 2);
+    await setProduct(page.request, product.slug, { stock });
+    await page.goto("/cart");
+    const quantity = quantityInput(page, product.name);
+
+    await quantity.fill("5");
+    await quantity.blur();
+
+    await expectBadge(page, byTarget("KD-06", { legacy: 5, next: stock }));
+    await expect(quantity).toHaveValue(
+      byTarget("KD-06", { legacy: "5", next: String(stock) }),
+    );
+    await expect(page.getByRole("status")).toHaveText(
+      byTarget("KD-06", {
+        legacy: "",
+        next: COPY.cart.cap(stock, product.name),
+      }),
+    );
   });
 
   test("[BR-C3] a cart quantity change updates the line total and the badge", async ({
