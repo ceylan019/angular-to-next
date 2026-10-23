@@ -1,0 +1,8 @@
+node_modules
+**/node_modules
+**/dist
+.git
+**/reports
+**/coverage
+**/.stryker-tmp
+backend/public/images

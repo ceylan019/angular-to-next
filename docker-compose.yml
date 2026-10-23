@@ -10,3 +10,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgres://candles:candles@db:5432/candles
+      TEST_MODE: ${TEST_MODE:-false}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch("http://localhost:8080/api/health").then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))
+      interval: 2s
+      timeout: 5s
+      retries: 30

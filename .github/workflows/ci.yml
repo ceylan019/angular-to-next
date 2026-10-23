@@ -17,3 +17,24 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
+
+  backend:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter backend lint
+      - run: pnpm --filter backend typecheck
+      - run: pnpm --filter backend test:unit
+      - run: pnpm --filter backend test:api
+      - run: pnpm --filter backend mutation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-backend
+          path: backend/reports/mutation
