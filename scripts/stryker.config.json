@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "command",
+  "mutate": ["traceability/traceability.ts"],
+  "incremental": false,
+  "thresholds": {
+    "high": 95,
+    "low": 90,
+    "break": 90
+  },
+  "reporters": ["html", "json", "clear-text"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "commandRunner": {
+    "command": "pnpm exec vitest run"
+  },
+  "coverageAnalysis": "off"
+}

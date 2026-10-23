@@ -8,3 +8,4 @@ test-results
 playwright-report
 .stryker-tmp
 legacy/package-lock.json
+docs/traceability.md

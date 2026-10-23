@@ -11,7 +11,7 @@ Work in progress. Each step lands as one pull request.
 - [x] Step 1: Repository skeleton
 - [x] Step 2: Shared backend
 - [x] Step 3: Legacy Angular 10 shop
-- [ ] Step 4: Shared parity suite, proven on legacy
+- [x] Step 4: Shared parity suite, proven on legacy
 - [ ] Step 5: Rewrite browse
 - [ ] Step 6: Rewrite cart
 - [ ] Step 7: Rewrite checkout
