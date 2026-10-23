@@ -85,6 +85,33 @@ test.describe("product detail @browse", () => {
     ).toHaveAttribute("max", "1");
   });
 
+  test("[BR-C1] the quantity keeps the typed value after adding", async ({
+    page,
+  }) => {
+    const product = bySlug("lavender-dusk");
+    await page.goto(`/products/${product.slug}`);
+    const quantity = page.getByRole("spinbutton", {
+      name: COPY.product.quantity,
+    });
+    const addToCart = page.getByRole("button", { name: COPY.addToCart });
+
+    await quantity.fill("2");
+    await addToCart.click();
+
+    await expect(page.getByRole("status")).toHaveText(
+      COPY.cart.added(product.name),
+    );
+    await expect(quantity).toHaveValue("2");
+
+    await quantity.fill("12");
+    await addToCart.click();
+
+    await expect(page.getByRole("status")).toHaveText(
+      COPY.cart.cap(CAP, product.name),
+    );
+    await expect(quantity).toHaveValue("12");
+  });
+
   test("[BR-B6] the product page links back to the shop through the header", async ({
     page,
   }) => {

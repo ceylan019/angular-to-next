@@ -8,3 +8,4 @@ allowBuilds:
   protobufjs: false
   ssh2: false
   esbuild: false
+  unrs-resolver: false

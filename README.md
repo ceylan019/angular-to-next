@@ -12,7 +12,7 @@ Work in progress. Each step lands as one pull request.
 - [x] Step 2: Shared backend
 - [x] Step 3: Legacy Angular 10 shop
 - [x] Step 4: Shared parity suite, proven on legacy
-- [ ] Step 5: Rewrite browse
+- [x] Step 5: Rewrite browse
 - [ ] Step 6: Rewrite cart
 - [ ] Step 7: Rewrite checkout
 - [ ] Step 8: Old versus new results
