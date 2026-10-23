@@ -38,3 +38,28 @@ jobs:
         with:
           name: mutation-backend
           path: backend/reports/mutation
+
+  legacy-unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target test -t legacy-test ./legacy
+      - run: docker run --rm legacy-test
+
+  legacy-mutation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target mutation -t legacy-mutation ./legacy
+      - run: docker run --name legacy-mutation legacy-mutation
+      - if: always()
+        run: |
+          mkdir -p legacy/reports
+          docker cp legacy-mutation:/app/reports/mutation legacy/reports/mutation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-legacy
+          path: legacy/reports/mutation

@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "karma",
+  "karma": {
+    "projectType": "angular-cli",
+    "configFile": "karma.conf.js",
+    "config": {
+      "browsers": ["ChromeHeadlessCI"]
+    }
+  },
+  "mutate": ["src/app/**/*.ts", "!src/app/**/*.spec.ts"],
+  "concurrency": 4,
+  "reporters": ["html", "json", "clear-text"],
+  "htmlReporter": {
+    "baseDir": "reports/mutation/html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "thresholds": {
+    "break": null
+  }
+}

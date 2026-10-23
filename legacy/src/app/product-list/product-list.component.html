@@ -1,0 +1,112 @@
+<h1 class="mb-4">All candles</h1>
+<div role="status" class="text-success mb-3">{{ message }}</div>
+<div class="row">
+  <div class="col-md-3 mb-4">
+    <fieldset class="mb-4">
+      <legend class="h6">Scent family</legend>
+      <div class="form-check" *ngFor="let family of families">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          [id]="'family-' + family.slug"
+          [checked]="isSelected(family.slug)"
+          (change)="toggleFamily(family.slug, $any($event.target).checked)"
+        />
+        <label class="form-check-label" [for]="'family-' + family.slug">{{
+          family.name
+        }}</label>
+      </div>
+    </fieldset>
+    <div class="form-group">
+      <label for="sort">Sort by</label>
+      <select
+        id="sort"
+        class="form-control"
+        (change)="changeSort($any($event.target).value)"
+      >
+        <option
+          *ngFor="let option of sorts"
+          [value]="option.value"
+          [selected]="option.value === sort"
+        >
+          {{ option.label }}
+        </option>
+      </select>
+    </div>
+  </div>
+  <div class="col-md-9">
+    <ng-container *ngIf="showGrid">
+      <ul aria-label="Products" class="list-unstyled row">
+        <li class="col-md-4 mb-4" *ngFor="let product of result.items">
+          <div class="card h-100">
+            <img class="card-img-top" [src]="product.imageUrl" />
+            <div class="card-body d-flex flex-column">
+              <h2 class="h5 card-title">
+                <a [routerLink]="['/products', product.slug]">{{
+                  product.name
+                }}</a>
+              </h2>
+              <p class="card-text mb-1">
+                {{ product.priceCents / 100 | currency }}
+              </p>
+              <p class="card-text text-muted">
+                {{ stockText(product.stock) }}
+              </p>
+              <button
+                type="button"
+                class="btn btn-primary mt-auto"
+                [disabled]="product.stock === 0"
+                (click)="add(product)"
+              >
+                Add to cart
+              </button>
+            </div>
+          </div>
+        </li>
+      </ul>
+      <nav aria-label="Pagination" *ngIf="showPagination">
+        <ul class="pagination justify-content-center">
+          <li class="page-item" *ngIf="page > 1">
+            <a
+              class="page-link"
+              routerLink="/"
+              [queryParams]="linkParams(page - 1)"
+              >Previous</a
+            >
+          </li>
+          <li
+            class="page-item"
+            *ngFor="let n of pageNumbers"
+            [class.active]="n === page"
+          >
+            <a
+              class="page-link"
+              routerLink="/"
+              [queryParams]="linkParams(n)"
+              [attr.aria-current]="n === page ? 'page' : null"
+              >{{ n }}</a
+            >
+          </li>
+          <li class="page-item" *ngIf="page < result.totalPages">
+            <a
+              class="page-link"
+              routerLink="/"
+              [queryParams]="linkParams(page + 1)"
+              >Next</a
+            >
+          </li>
+        </ul>
+      </nav>
+    </ng-container>
+    <div *ngIf="outOfRange" class="text-center py-5">
+      <p class="lead">This page is empty.</p>
+      <a routerLink="/" [queryParams]="linkParams(1)" class="btn btn-primary"
+        >Go to page 1</a
+      >
+    </div>
+    <div *ngIf="noMatches" class="text-center py-5">
+      <p class="lead">No candles match these filters</p>
+      <a routerLink="/" class="btn btn-primary">Clear filters</a>
+    </div>
+  </div>
+</div>
