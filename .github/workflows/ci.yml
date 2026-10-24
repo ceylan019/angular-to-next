@@ -4,6 +4,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,6 +16,37 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.areas.outputs.backend }}
+      web: ${{ steps.areas.outputs.web }}
+      legacy: ${{ steps.areas.outputs.legacy }}
+      e2e: ${{ steps.areas.outputs.e2e }}
+      scripts: ${{ steps.areas.outputs.scripts }}
+      lighthouse: ${{ steps.areas.outputs.lighthouse }}
+      docs: ${{ steps.areas.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - id: areas
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            node scripts/ci/cli.ts --base "$BASE" --head "$HEAD" >> "$GITHUB_OUTPUT"
+          else
+            node scripts/ci/cli.ts --all >> "$GITHUB_OUTPUT"
+          fi
+          cat "$GITHUB_OUTPUT"
+
   repo:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -27,6 +61,8 @@ jobs:
       - run: pnpm format:check
 
   backend:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -49,6 +85,8 @@ jobs:
           path: backend/reports/mutation
 
   web:
+    needs: changes
+    if: ${{ needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -70,9 +108,15 @@ jobs:
           name: coverage-web
           path: web/coverage
 
-  web-mutation:
+  web-mutation-shard:
+    needs: changes
+    if: ${{ needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -81,7 +125,48 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter web mutation --concurrency 2
+      - env:
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: |
+          FILES="$(node scripts/mutation/cli.ts shard --config web/stryker.config.json --shard "$SHARD")"
+          if [ -z "$FILES" ]; then
+            echo "Shard $SHARD has no files to mutate, so Stryker does not run."
+            exit 0
+          fi
+          echo "Shard $SHARD mutates $FILES"
+          pnpm --filter web mutation --concurrency 2 --mutate "$FILES"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-web-shard-${{ matrix.shard }}
+          path: web/reports/mutation
+          if-no-files-found: ignore
+
+  web-mutation:
+    needs: [changes, web-mutation-shard]
+    if: ${{ !cancelled() && needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - env:
+          SHARDS: ${{ needs.web-mutation-shard.result }}
+        run: |
+          if [ "$SHARDS" != "success" ]; then
+            echo "The web mutation shards ended with result $SHARDS, so there is no complete report to merge."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mutation-web-shard-*
+          path: shards
+      - run: node scripts/mutation/cli.ts merge --out web/reports/mutation --break 90 shards/*/mutation.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -89,6 +174,8 @@ jobs:
           path: web/reports/mutation
 
   legacy-unit:
+    needs: changes
+    if: ${{ needs.changes.outputs.legacy == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -106,6 +193,8 @@ jobs:
           path: legacy/coverage/legacy
 
   legacy-mutation:
+    needs: changes
+    if: ${{ needs.changes.outputs.legacy == 'true' || github.event_name != 'pull_request' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -123,6 +212,8 @@ jobs:
           path: legacy/reports/mutation
 
   e2e-unit:
+    needs: changes
+    if: ${{ needs.changes.outputs.e2e == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -137,6 +228,12 @@ jobs:
       - run: pnpm --filter e2e test:unit
 
   e2e:
+    needs: changes
+    if: >-
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.legacy == 'true' ||
+      needs.changes.outputs.e2e == 'true'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
@@ -188,6 +285,8 @@ jobs:
       - run: git diff --exit-code docs/traceability.md
 
   scripts-mutation:
+    needs: changes
+    if: ${{ needs.changes.outputs.scripts == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -207,6 +306,12 @@ jobs:
           if-no-files-found: ignore
 
   lighthouse:
+    needs: changes
+    if: >-
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.legacy == 'true' ||
+      needs.changes.outputs.lighthouse == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -235,6 +340,12 @@ jobs:
           path: reports/lighthouse/next
 
   metrics:
+    needs: changes
+    if: >-
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.legacy == 'true' ||
+      needs.changes.outputs.scripts == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -374,3 +485,37 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  ci-ok:
+    needs:
+      [
+        changes,
+        repo,
+        backend,
+        web,
+        web-mutation-shard,
+        web-mutation,
+        legacy-unit,
+        legacy-mutation,
+        e2e-unit,
+        e2e,
+        traceability,
+        scripts-mutation,
+        lighthouse,
+        metrics,
+        results,
+        site,
+      ]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          FAILED="$(echo "$NEEDS" | jq -r '[to_entries[] | select(.value.result != "success" and .value.result != "skipped") | .key] | join(", ")')"
+          if [ -n "$FAILED" ]; then
+            echo "These jobs did not succeed: $FAILED"
+            exit 1
+          fi

@@ -22,7 +22,7 @@ A suite that passes on the legacy app describes what the legacy app does today, 
 - Steps 5, 6 and 7 each rewrote part of the shop and added its flows to the list in the same pull request: shell and browse, then cart, then checkout. Before a flow is enabled, its tests do not run against the new app. Once it is enabled, they must pass on both apps, on x64 and Arm runners, for CI to pass.
 - Tests added during the rewrite run against the legacy app too, so a new test cannot quietly describe only the new app.
 
-The list now holds all four flows, so the whole suite runs against both apps on every pull request.
+The list now holds all four flows, so the whole suite runs against both apps on every push to `main` and on every pull request that changes either app, the backend, the suite or a shared file such as the workflow or the lockfile.
 
 ## 3. Record every difference
 
