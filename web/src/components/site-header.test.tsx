@@ -43,4 +43,34 @@ describe("SiteHeader", () => {
       ),
     ).toHaveLength(2);
   });
+
+  it("paints the bar and its plain links in the header colors", () => {
+    render(<SiteHeader cartCount={1} />);
+
+    const banner = screen.getByRole("banner");
+    expect(banner).toHaveClass("bg-header", "text-header-foreground");
+    expect(banner).not.toHaveClass("bg-surface");
+    for (const name of ["Wick & Co. Candles", "Shop"]) {
+      const link = within(banner).getByRole("link", { name });
+      expect(link).not.toHaveClass("text-ink");
+    }
+    expect(within(banner).getByRole("link", { name: "Cart (1)" })).toHaveClass(
+      "bg-primary",
+      "text-primary-foreground",
+    );
+  });
+
+  it("keeps keyboard focus visible on the dark bar", () => {
+    render(<SiteHeader cartCount={2} />);
+
+    const links = within(screen.getByRole("banner")).getAllByRole("link");
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link).toHaveClass(
+        "focus-visible:outline-2",
+        "focus-visible:outline-offset-2",
+        "focus-visible:outline-header-foreground",
+      );
+    }
+  });
 });

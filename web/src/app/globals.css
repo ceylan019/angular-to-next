@@ -9,6 +9,8 @@
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
   --color-ink: var(--ink);
+  --color-header: var(--header);
+  --color-header-foreground: var(--header-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -36,12 +38,14 @@
 }
 
 :root {
-  --background: #faf7f2;
-  --surface: #fffdf9;
-  --ink: #2b2420;
-  --muted-foreground: #6b5d52;
-  --accent: #8a6d4f;
-  --border: #ece4d8;
+  --background: #f8f9fa;
+  --surface: #ffffff;
+  --ink: #212529;
+  --muted-foreground: #5c636a;
+  --accent: #0b5ed7;
+  --border: #dee2e6;
+  --header: #343a40;
+  --header-foreground: #ffffff;
   --foreground: var(--ink);
   --card: var(--surface);
   --card-foreground: var(--ink);
@@ -53,8 +57,8 @@
   --secondary-foreground: var(--ink);
   --muted: var(--border);
   --accent-foreground: var(--surface);
-  --destructive: #b3261e;
-  --input: var(--border);
+  --destructive: #b02a37;
+  --input: #868e96;
   --ring: var(--accent);
   --radius: 0.75rem;
 }
