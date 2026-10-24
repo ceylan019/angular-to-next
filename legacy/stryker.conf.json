@@ -10,7 +10,8 @@
   },
   "mutate": ["src/app/**/*.ts", "!src/app/**/*.spec.ts"],
   "concurrency": 4,
-  "reporters": ["html", "json", "clear-text"],
+  "timeoutMS": 20000,
+  "reporters": ["html", "json", "clear-text", "progress-append-only"],
   "htmlReporter": {
     "baseDir": "reports/mutation/html"
   },
