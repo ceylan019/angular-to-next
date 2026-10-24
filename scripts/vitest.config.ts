@@ -7,6 +7,7 @@ export default defineConfig({
       "metrics/**/*.test.ts",
       "results/**/*.test.ts",
       "site/**/*.test.ts",
+      "ci/**/*.test.ts",
     ],
     environment: "node",
   },
