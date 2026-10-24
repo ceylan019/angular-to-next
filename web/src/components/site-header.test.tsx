@@ -43,4 +43,20 @@ describe("SiteHeader", () => {
       ),
     ).toHaveLength(2);
   });
+
+  it("paints the bar and its plain links in the header colors", () => {
+    render(<SiteHeader cartCount={1} />);
+
+    const banner = screen.getByRole("banner");
+    expect(banner).toHaveClass("bg-header", "text-header-foreground");
+    expect(banner).not.toHaveClass("bg-surface");
+    for (const name of ["Wick & Co. Candles", "Shop"]) {
+      const link = within(banner).getByRole("link", { name });
+      expect(link).not.toHaveClass("text-ink");
+    }
+    expect(within(banner).getByRole("link", { name: "Cart (1)" })).toHaveClass(
+      "bg-primary",
+      "text-primary-foreground",
+    );
+  });
 });
