@@ -7,7 +7,8 @@
     "metrics/measurements.ts",
     "results/results.ts",
     "site/build-site.ts",
-    "ci/changes.ts"
+    "ci/changes.ts",
+    "mutation/shard.ts"
   ],
   "incremental": false,
   "thresholds": {
