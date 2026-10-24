@@ -78,4 +78,4 @@ The parity work proves in CI that the new app behaves like the old one, apart fr
 - **Instant rollback.** One switch sends all traffic back to the legacy app, which keeps running unchanged until the new app carries all of it.
 - **Order access token.** The confirmation page stops relying on the order number alone, so knowing an order number is no longer enough to view the order.
 
-This stage is tracked as a backlog issue.
+This stage is tracked in [issue #9](https://github.com/ceylan019/angular-to-next/issues/9).
