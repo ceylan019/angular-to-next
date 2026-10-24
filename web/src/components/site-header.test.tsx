@@ -59,4 +59,18 @@ describe("SiteHeader", () => {
       "text-primary-foreground",
     );
   });
+
+  it("keeps keyboard focus visible on the dark bar", () => {
+    render(<SiteHeader cartCount={2} />);
+
+    const links = within(screen.getByRole("banner")).getAllByRole("link");
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link).toHaveClass(
+        "focus-visible:outline-2",
+        "focus-visible:outline-offset-2",
+        "focus-visible:outline-header-foreground",
+      );
+    }
+  });
 });
