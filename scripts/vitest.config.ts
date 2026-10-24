@@ -8,6 +8,7 @@ export default defineConfig({
       "results/**/*.test.ts",
       "site/**/*.test.ts",
       "ci/**/*.test.ts",
+      "mutation/**/*.test.ts",
     ],
     environment: "node",
   },

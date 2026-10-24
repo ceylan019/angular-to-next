@@ -20,6 +20,7 @@
     "results",
     "site",
     "ci",
+    "mutation",
     "*.ts",
     "*.mjs"
   ]
