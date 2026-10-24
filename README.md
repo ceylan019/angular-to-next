@@ -11,7 +11,29 @@ This repository moves a small candle shop from a server rendered Angular 10 app 
 
 ## Results
 
-The results table is generated from the comparison pull request's CI run and appears here with the first snapshot.
+| Metric                                               | Legacy                                                      | New                                                         |
+| ---------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| Lighthouse performance, `/`                          | 59                                                          | 100                                                         |
+| Lighthouse performance, `/products/lavender-dusk`    | 81                                                          | 99                                                          |
+| Lighthouse performance, `/cart`                      | 81                                                          | 99                                                          |
+| Lighthouse accessibility, `/`                        | 86                                                          | 100                                                         |
+| Lighthouse accessibility, `/products/lavender-dusk`  | 84                                                          | 100                                                         |
+| Lighthouse accessibility, `/cart`                    | 89                                                          | 100                                                         |
+| Lighthouse best practices, `/`                       | 100                                                         | 100                                                         |
+| Lighthouse best practices, `/products/lavender-dusk` | 100                                                         | 100                                                         |
+| Lighthouse best practices, `/cart`                   | 100                                                         | 100                                                         |
+| Lighthouse SEO, `/`                                  | 83                                                          | 100                                                         |
+| Lighthouse SEO, `/products/lavender-dusk`            | 83                                                          | 100                                                         |
+| Lighthouse SEO, `/cart`                              | 91                                                          | 100                                                         |
+| JavaScript on first load, `/` (KB, gzip)             | 147.3                                                       | 143.6                                                       |
+| Backend calls per product page view                  | 2                                                           | 1                                                           |
+| Known vulnerabilities (production dependencies)      | 52 (2 critical, 31 high, 13 moderate, 6 low)                | 0                                                           |
+| Mutation score                                       | 96.1% (788 killed, 1 timed out, 32 survived, 0 not covered) | 98.6% (702 killed, 2 timed out, 10 survived, 0 not covered) |
+| Line coverage                                        | 100%                                                        | 96.07%                                                      |
+
+Line coverage scopes differ: Karma instruments only the legacy files the specs load, while Vitest V8 reports every file under the new app's `src`.
+
+How each number is measured: [docs/results.md](docs/results.md). Numbers come from CI run [https://github.com/ceylan019/angular-to-next/actions/runs/40064179046](https://github.com/ceylan019/angular-to-next/actions/runs/40064179046), not from a developer machine.
 
 ## Side by side
 
