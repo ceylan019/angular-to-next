@@ -145,7 +145,7 @@ CI publishes its reports to GitHub Pages on every push to `main` once the jobs t
 - Lighthouse reports for both apps
 - Coverage reports for both apps
 
-Every CI run also keeps these reports as downloadable artifacts, including runs on pull requests.
+Every CI run also keeps these reports as downloadable artifacts for the jobs that ran, including runs on pull requests.
 
 ## Repository tour
 
@@ -158,7 +158,7 @@ Every CI run also keeps these reports as downloadable artifacts, including runs 
 | [`scripts/`](./scripts)                      | The traceability checker, the metrics and results generators and the reports site builder, with unit tests and mutation testing of their core logic. |
 | [`lighthouse/`](./lighthouse)                | Lighthouse CI settings for both apps.                                                                                                                |
 | [`docs/`](./docs)                            | Requirements, the known differences register, the legacy tech debt, the generated traceability matrix and the migration approach.                    |
-| [`.github/workflows/`](./.github/workflows)  | CI on every pull request and push to `main`, and a nightly flake check that repeats the shared suite.                                                |
+| [`.github/workflows/`](./.github/workflows)  | CI that runs only the jobs a pull request's changes touch, and every job on pushes to `main`, nightly and manually, plus the nightly flake check.    |
 | [`docker-compose.yml`](./docker-compose.yml) | The stack: PostgreSQL, the backend, the legacy app and the new app.                                                                                  |
 
 The legacy code level debt that changes no behavior is listed in [docs/tech-debt.md](./docs/tech-debt.md), and [docs/traceability.md](./docs/traceability.md) maps every rule and known difference to its tests in each layer.
