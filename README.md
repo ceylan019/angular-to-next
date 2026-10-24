@@ -165,7 +165,7 @@ The legacy code level debt that changes no behavior is listed in [docs/tech-debt
 
 ## Next stage
 
-The production rollout stage moves real traffic to the new app gradually: a router sends a small canary share to it, monitoring compares its errors, latency and completed orders with the legacy app, and one switch sends all traffic back to legacy at once. It also gives order pages an access token. This stage is tracked as a backlog issue.
+The production rollout stage moves real traffic to the new app gradually: a router sends a small canary share to it, monitoring compares its errors, latency and completed orders with the legacy app, and one switch sends all traffic back to legacy at once. It also gives order pages an access token. This stage is tracked in [issue #9](https://github.com/ceylan019/angular-to-next/issues/9).
 
 ## Build history
 
