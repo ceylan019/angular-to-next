@@ -6,7 +6,8 @@
     "metrics/audit.ts",
     "metrics/measurements.ts",
     "results/results.ts",
-    "site/build-site.ts"
+    "site/build-site.ts",
+    "ci/changes.ts"
   ],
   "incremental": false,
   "thresholds": {
