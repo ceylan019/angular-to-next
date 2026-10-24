@@ -1,0 +1,182 @@
+[
+  {
+    "url": "http://localhost:4000/",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_20_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_20_00.report.json",
+    "summary": {
+      "performance": 0.61,
+      "accessibility": 0.86,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_21_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_21_00.report.json",
+    "summary": {
+      "performance": 0.55,
+      "accessibility": 0.86,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_22_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_22_00.report.json",
+    "summary": {
+      "performance": 0.59,
+      "accessibility": 0.86,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_23_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_23_00.report.json",
+    "summary": {
+      "performance": 0.7,
+      "accessibility": 0.86,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_24_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost--2026_10_21_18_24_00.report.json",
+    "summary": {
+      "performance": 0.58,
+      "accessibility": 0.86,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/products/lavender-dusk",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_20_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_20_00.report.json",
+    "summary": {
+      "performance": 0.82,
+      "accessibility": 0.84,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/products/lavender-dusk",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_21_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_21_00.report.json",
+    "summary": {
+      "performance": 0.8,
+      "accessibility": 0.84,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/products/lavender-dusk",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_22_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_22_00.report.json",
+    "summary": {
+      "performance": 0.85,
+      "accessibility": 0.84,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/products/lavender-dusk",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_23_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_23_00.report.json",
+    "summary": {
+      "performance": 0.79,
+      "accessibility": 0.84,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/products/lavender-dusk",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_24_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-products_lavender-dusk-2026_10_21_18_24_00.report.json",
+    "summary": {
+      "performance": 0.83,
+      "accessibility": 0.84,
+      "best-practices": 1,
+      "seo": 0.83
+    }
+  },
+  {
+    "url": "http://localhost:4000/cart",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_20_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_20_00.report.json",
+    "summary": {
+      "performance": 0.84,
+      "accessibility": 0.89,
+      "best-practices": 1,
+      "seo": 0.91
+    }
+  },
+  {
+    "url": "http://localhost:4000/cart",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_21_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_21_00.report.json",
+    "summary": {
+      "performance": 0.86,
+      "accessibility": 0.89,
+      "best-practices": 1,
+      "seo": 0.91
+    }
+  },
+  {
+    "url": "http://localhost:4000/cart",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_22_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_22_00.report.json",
+    "summary": {
+      "performance": 0.81,
+      "accessibility": 0.88,
+      "best-practices": 0.96,
+      "seo": 0.91
+    }
+  },
+  {
+    "url": "http://localhost:4000/cart",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_23_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_23_00.report.json",
+    "summary": {
+      "performance": 0.84,
+      "accessibility": 0.9,
+      "best-practices": 1,
+      "seo": 0.91
+    }
+  },
+  {
+    "url": "http://localhost:4000/cart",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_24_00.report.html",
+    "jsonPath": "/home/runner/work/shop/shop/reports/lighthouse/legacy/localhost-cart-2026_10_21_18_24_00.report.json",
+    "summary": {
+      "performance": 0.9,
+      "accessibility": 0.89,
+      "best-practices": 1,
+      "seo": 0.91
+    }
+  }
+]

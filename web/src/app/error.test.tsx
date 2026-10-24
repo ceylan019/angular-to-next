@@ -1,6 +1,15 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { Button } from "@/components/ui/button";
 import ErrorPage from "./error";
+
+function buttonMarkup(element: ReactElement): string | undefined {
+  const container = document.createElement("div");
+  container.innerHTML = renderToStaticMarkup(element);
+  return container.querySelector("button")?.outerHTML;
+}
 
 describe("error page", () => {
   it("shows the error message and retries", () => {
@@ -32,6 +41,15 @@ describe("error page", () => {
   it("offers exactly one action", () => {
     render(<ErrorPage error={new Error("x")} retry={vi.fn()} />);
     expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("renders Try again with the markup of the shared default button", () => {
+    const markup = buttonMarkup(
+      <ErrorPage error={new Error("x")} retry={vi.fn()} />,
+    );
+
+    expect(markup).toBeDefined();
+    expect(markup).toBe(buttonMarkup(<Button type="button">Try again</Button>));
   });
 
   it("retries once per click", () => {

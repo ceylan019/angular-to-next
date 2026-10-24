@@ -5,11 +5,13 @@ export const CART_COOKIE = "cart";
 
 export const MAX_PER_LINE = 10;
 
+const MAX_UNIT_PRICE_CENTS = 1_000_000;
+
 const cartLineSchema = z.object({
   productId: z.number().int().positive(),
   slug: productSummarySchema.shape.slug,
   quantity: z.number().int().min(1).max(MAX_PER_LINE),
-  unitPriceCents: z.number().int().positive(),
+  unitPriceCents: z.number().int().positive().max(MAX_UNIT_PRICE_CENTS),
 });
 
 export type CartLine = z.infer<typeof cartLineSchema>;

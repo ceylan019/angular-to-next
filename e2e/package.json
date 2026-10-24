@@ -6,7 +6,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",
-    "test": "playwright test"
+    "test": "playwright test",
+    "record": "playwright test -c recording/playwright.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -12,5 +12,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["support", "tests", "*.ts", "*.mjs"]
+  "include": ["support", "tests", "recording", "*.ts", "*.mjs"]
 }

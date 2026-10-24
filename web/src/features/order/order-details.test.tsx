@@ -121,6 +121,32 @@ describe("OrderDetails", () => {
     ]);
   });
 
+  it("[BR-K5] shows a 200 character unbroken address line intact and lets it wrap", () => {
+    const long = "A".repeat(200);
+    render(<OrderDetails order={withShipping({ line1: long })} />);
+
+    const line = screen.getByText(long, { exact: true });
+    expect(line).toHaveTextContent(long);
+    expect(line).toHaveClass("break-words");
+    expect(addressLines()).toContain(long);
+  });
+
+  it("[BR-K5] lets a very long item name wrap beside its price", () => {
+    const long = "B".repeat(200);
+    render(
+      <OrderDetails
+        order={{
+          ...order,
+          lines: order.lines.map((line) => ({ ...line, name: long })),
+        }}
+      />,
+    );
+
+    const name = screen.getByText(`${long} × 2`, { exact: true });
+    expect(name).toHaveClass("break-words", "min-w-0");
+    expect(items()).toEqual([[`${long} × 2`, "$36.00"]]);
+  });
+
   it("[BR-K5] shows the shipping charge the backend applied", () => {
     render(
       <OrderDetails

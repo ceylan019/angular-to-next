@@ -61,6 +61,9 @@ describe("cart cookie", () => {
       [{ quantity: "2" }, false],
       [{ quantity: null }, false],
       [{ unitPriceCents: 1 }, true],
+      [{ unitPriceCents: 1_000_000 }, true],
+      [{ unitPriceCents: 1_000_001 }, false],
+      [{ unitPriceCents: 9007199254740991 }, false],
       [{ unitPriceCents: 0 }, false],
       [{ unitPriceCents: -5 }, false],
       [{ unitPriceCents: 10.5 }, false],
@@ -85,6 +88,17 @@ describe("cart cookie", () => {
         accepted ? 1 : 0,
       );
     }
+  });
+
+  it("drops a line priced above $10,000 a unit and keeps the rest", () => {
+    const tampered = {
+      productId: 8,
+      slug: "cedar-hearth",
+      quantity: 10,
+      unitPriceCents: 9007199254740991,
+    };
+
+    expect(parseLines([tampered, valid])).toEqual([valid]);
   });
 
   it("drops lines that are not objects", () => {

@@ -635,6 +635,7 @@ describe("CheckoutForm", () => {
       email: "early@example.com",
     });
   });
+
   it.each<[string, PlaceOrderActionResult, string]>([
     ["declined", { status: "declined" }, DECLINED],
     [
@@ -649,7 +650,7 @@ describe("CheckoutForm", () => {
       "Please check your details and try again.",
     ],
   ])(
-    "[BR-K6] returns focus to Place order after a %s answer",
+    "returns focus to Place order after a %s answer",
     async (_label, result, message) => {
       render(<CheckoutForm action={answering(result, result)} />);
       fill();
@@ -675,7 +676,7 @@ describe("CheckoutForm", () => {
     },
   );
 
-  it("[BR-K6] leaves focus alone until an answer arrives", async () => {
+  it("leaves focus alone until an answer arrives", async () => {
     const { action, answer } = holding();
     render(<CheckoutForm action={action} />);
     fill();

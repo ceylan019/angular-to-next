@@ -1,7 +1,13 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "command",
-  "mutate": ["traceability/traceability.ts"],
+  "mutate": [
+    "traceability/traceability.ts",
+    "metrics/audit.ts",
+    "metrics/measurements.ts",
+    "results/results.ts",
+    "site/build-site.ts"
+  ],
   "incremental": false,
   "thresholds": {
     "high": 95,

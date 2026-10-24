@@ -18,6 +18,7 @@ export type AppDeps = {
 
 export function createApp(deps: AppDeps): express.Express {
   const app = express();
+  app.disable("x-powered-by");
   app.set("query parser", "simple");
   const counter = createRequestCounter();
   app.use(counter.middleware);

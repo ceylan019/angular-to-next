@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 export default function ErrorPage({
   retry,
@@ -11,14 +11,18 @@ export default function ErrorPage({
   return (
     <div className="flex flex-col items-start gap-4">
       <p>Something went wrong. Please try again.</p>
-      <Button
+      <button
+        data-slot="button"
+        data-variant="default"
+        data-size="default"
+        className={buttonVariants()}
         type="button"
         onClick={() => {
           retry();
         }}
       >
         Try again
-      </Button>
+      </button>
     </div>
   );
 }

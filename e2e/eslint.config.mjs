@@ -23,7 +23,7 @@ export default defineConfig(
     },
   },
   {
-    files: ["tests/**/*.ts", "support/**/*.ts"],
+    files: ["tests/**/*.ts", "support/**/*.ts", "recording/**/*.ts"],
     rules: {
       "no-restricted-syntax": [
         "error",

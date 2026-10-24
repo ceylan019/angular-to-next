@@ -23,6 +23,18 @@ describe("health and fallback", () => {
     expect(res.body).toEqual({ status: "ok" });
   });
 
+  it("does not announce the framework in a response header", async () => {
+    const answers = [
+      ["/api/health", 200],
+      ["/api/nope", 404],
+    ] as const;
+    for (const [path, status] of answers) {
+      const res = await request(app).get(path);
+      expect(res.status).toBe(status);
+      expect(res.headers).not.toHaveProperty("x-powered-by");
+    }
+  });
+
   it("answers 404 json for unknown api routes", async () => {
     const res = await request(app).get("/api/nope");
     expect(res.status).toBe(404);

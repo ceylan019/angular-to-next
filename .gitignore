@@ -9,3 +9,4 @@ playwright-report
 backend/public/images
 .env*
 stryker.log
+.lighthouseci

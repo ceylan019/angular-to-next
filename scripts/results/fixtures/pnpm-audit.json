@@ -1,0 +1,85 @@
+{
+  "advisories": {
+    "2001": {
+      "findings": [
+        {
+          "version": "3.0.0",
+          "paths": ["web>fixture-package-a"]
+        }
+      ],
+      "id": 2001,
+      "title": "Fixture advisory 2001",
+      "module_name": "fixture-package-a",
+      "severity": "moderate",
+      "vulnerable_versions": "<3.1.0",
+      "patched_versions": ">=3.1.0",
+      "github_advisory_id": "GHSA-fixt-ure1-0000",
+      "cwe": [],
+      "url": "https://example.com/advisories/2001"
+    },
+    "2002": {
+      "findings": [
+        {
+          "version": "3.0.0",
+          "paths": ["web>fixture-package-b"]
+        }
+      ],
+      "id": 2002,
+      "title": "Fixture advisory 2002",
+      "module_name": "fixture-package-b",
+      "severity": "low",
+      "vulnerable_versions": "<3.1.0",
+      "patched_versions": ">=3.1.0",
+      "github_advisory_id": "GHSA-fixt-ure2-0000",
+      "cwe": [],
+      "url": "https://example.com/advisories/2002"
+    },
+    "2003": {
+      "findings": [
+        {
+          "version": "3.0.0",
+          "paths": ["web>fixture-package-c"]
+        }
+      ],
+      "id": 2003,
+      "title": "Fixture advisory 2003",
+      "module_name": "fixture-package-c",
+      "severity": "low",
+      "vulnerable_versions": "<3.1.0",
+      "patched_versions": ">=3.1.0",
+      "github_advisory_id": "GHSA-fixt-ure3-0000",
+      "cwe": [],
+      "url": "https://example.com/advisories/2003"
+    },
+    "2004": {
+      "findings": [
+        {
+          "version": "3.0.0",
+          "paths": ["web>fixture-package-d"]
+        }
+      ],
+      "id": 2004,
+      "title": "Fixture advisory 2004",
+      "module_name": "fixture-package-d",
+      "severity": "info",
+      "vulnerable_versions": "<3.1.0",
+      "patched_versions": ">=3.1.0",
+      "github_advisory_id": "GHSA-fixt-ure4-0000",
+      "cwe": [],
+      "url": "https://example.com/advisories/2004"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 1,
+      "low": 2,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0
+    },
+    "dependencies": 98,
+    "devDependencies": 0,
+    "optionalDependencies": 100,
+    "totalDependencies": 198
+  }
+}

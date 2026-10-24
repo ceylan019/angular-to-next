@@ -1,0 +1,15 @@
+{
+  "total": {
+    "lines": { "total": 400, "covered": 365, "skipped": 0, "pct": 91.25 },
+    "statements": { "total": 420, "covered": 380, "skipped": 0, "pct": 90.47 },
+    "functions": { "total": 90, "covered": 84, "skipped": 0, "pct": 93.33 },
+    "branches": { "total": 120, "covered": 108, "skipped": 0, "pct": 90 },
+    "branchesTrue": { "total": 0, "covered": 0, "skipped": 0, "pct": 100 }
+  },
+  "/app/src/app/shop.service.ts": {
+    "lines": { "total": 400, "covered": 365, "skipped": 0, "pct": 91.25 },
+    "functions": { "total": 90, "covered": 84, "skipped": 0, "pct": 93.33 },
+    "statements": { "total": 420, "covered": 380, "skipped": 0, "pct": 90.47 },
+    "branches": { "total": 120, "covered": 108, "skipped": 0, "pct": 90 }
+  }
+}

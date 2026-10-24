@@ -446,7 +446,7 @@ describe("placeOrderAction", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("[BR-K4] stays on checkout without a sentence when no ordered candle is affected", async () => {
+  it("[BR-K4] stays on checkout with the fallback sentence when no ordered candle is affected", async () => {
     cartHolds([lavenderLine, lastLightLine]);
     products(["lavender-dusk", lavenderDusk], ["last-light", null]);
     vi.mocked(placeOrder).mockResolvedValue({
@@ -464,7 +464,7 @@ describe("placeOrderAction", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
-  it("[BR-K1] orders only the candles that still exist and clears the cart", async () => {
+  it("[BR-K5] orders only the candles that still exist and clears the cart", async () => {
     cartHolds([lastLightLine, lavenderLine, emberLine]);
     products(
       ["lavender-dusk", lavenderDusk],

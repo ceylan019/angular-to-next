@@ -1,13 +1,5 @@
 import { z } from "zod";
-
-export const FAMILY_SLUGS = [
-  "floral",
-  "woody",
-  "fresh",
-  "gourmand",
-  "spicy",
-  "herbal",
-] as const;
+import { FAMILY_SLUGS } from "./families";
 
 export const COUNTRY_CODES = ["US", "CA", "GB", "DE", "NL"] as const;
 
@@ -132,7 +124,7 @@ export const priceChangedSchema = z.object({
   ),
 });
 
-export type FamilySlug = z.infer<typeof familySlugSchema>;
+export type { FamilySlug } from "./families";
 export type Family = z.infer<typeof familySchema>;
 export type ProductSummary = z.infer<typeof productSummarySchema>;
 export type ProductDetail = z.infer<typeof productDetailSchema>;

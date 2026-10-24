@@ -5,9 +5,17 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   repo:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -20,6 +28,7 @@ jobs:
 
   backend:
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -63,7 +72,7 @@ jobs:
 
   web-mutation:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -85,7 +94,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build --target test -t legacy-test ./legacy
-      - run: docker run --rm legacy-test
+      - run: docker run --name legacy-test legacy-test
+      - if: always()
+        run: |
+          mkdir -p legacy/coverage
+          docker cp legacy-test:/app/coverage/legacy legacy/coverage/legacy
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-legacy
+          path: legacy/coverage/legacy
 
   legacy-mutation:
     runs-on: ubuntu-24.04
@@ -150,11 +168,11 @@ jobs:
         if: always()
         with:
           name: playwright-${{ matrix.target }}-${{ matrix.runner }}
-          path: e2e/playwright-report
+          path: e2e/playwright-report/${{ matrix.target }}
 
   traceability:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -166,11 +184,193 @@ jobs:
       - run: pnpm --filter scripts lint
       - run: pnpm --filter scripts typecheck
       - run: pnpm --filter scripts test
-      - run: pnpm --filter scripts mutation
       - run: pnpm traceability
       - run: git diff --exit-code docs/traceability.md
+
+  scripts-mutation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter scripts mutation
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mutation-scripts
           path: scripts/reports/mutation
+          if-no-files-found: ignore
+
+  lighthouse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm demo:test
+      - run: pnpm lighthouse:legacy
+        continue-on-error: true
+      - run: pnpm lighthouse:next
+      - if: failure()
+        run: docker compose logs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-legacy
+          path: reports/lighthouse/legacy
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-next
+          path: reports/lighthouse/next
+
+  metrics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: mkdir -p reports
+      - run: pnpm audit --prod --json --filter web > reports/audit-next.json || true
+      - run: docker run --rm -v "$PWD/legacy":/app -w /app node:12.22.12-bullseye-slim npm audit --production --json > reports/audit-legacy.json || true
+      - run: pnpm --filter scripts exec playwright install --with-deps chromium
+      - run: pnpm demo:test
+      - run: pnpm metrics
+      - if: failure()
+        run: docker compose logs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: metrics
+          path: |
+            reports/metrics.json
+            reports/audit-legacy.json
+            reports/audit-next.json
+
+  results:
+    needs:
+      [metrics, lighthouse, web, web-mutation, legacy-unit, legacy-mutation]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: metrics
+          path: reports
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: lighthouse-legacy
+          path: reports/lighthouse/legacy
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: lighthouse-next
+          path: reports/lighthouse/next
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: mutation-legacy
+          path: reports/mutation/legacy
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: mutation-web
+          path: reports/mutation/next
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: coverage-legacy
+          path: reports/coverage/legacy
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: coverage-web
+          path: reports/coverage/next
+      - run: pnpm results -- --run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: results
+          path: |
+            docs/results.md
+            README.md
+
+  site:
+    needs:
+      [
+        backend,
+        web,
+        web-mutation,
+        legacy-unit,
+        legacy-mutation,
+        e2e,
+        lighthouse,
+      ]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: artifacts
+      - run: node scripts/site/cli.ts --artifacts artifacts --out site --repo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  pages:
+    needs:
+      [
+        site,
+        backend,
+        web,
+        web-mutation,
+        legacy-unit,
+        legacy-mutation,
+        e2e,
+        lighthouse,
+      ]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && success() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

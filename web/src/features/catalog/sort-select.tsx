@@ -1,18 +1,13 @@
-"use client";
-
 import { useId } from "react";
-import { useHydrated } from "@/components/use-hydrated";
 import {
   NativeSelect,
   NativeSelectOption,
 } from "@/components/ui/native-select";
-import { useCatalogNavigation } from "./catalog-navigation";
-import { SORT_OPTIONS, toSortKey, withSort } from "./catalog-query";
+import { SORT_OPTIONS } from "./catalog-query";
+import { SortSelectControl } from "./sort-select-control";
 
 export function SortSelect() {
-  const hydrated = useHydrated();
   const id = useId();
-  const { query, navigate } = useCatalogNavigation();
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-sm font-semibold text-ink">
@@ -20,11 +15,7 @@ export function SortSelect() {
       </label>
       <NativeSelect
         id={id}
-        value={query.sort}
-        disabled={!hydrated}
-        onChange={(event) => {
-          navigate(withSort(query, toSortKey(event.target.value)));
-        }}
+        control={SortSelectControl}
         className="w-full [&>select]:h-9 [&>select]:bg-surface"
       >
         {SORT_OPTIONS.map(({ value, label }) => (
