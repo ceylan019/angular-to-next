@@ -8,7 +8,8 @@
     "results/results.ts",
     "site/build-site.ts",
     "ci/changes.ts",
-    "mutation/shard.ts"
+    "mutation/shard.ts",
+    "mutation/merge.ts"
   ],
   "incremental": false,
   "thresholds": {
